@@ -1,0 +1,51 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "Wz6ul0NtN8Vc7iZOJxRJEIE2ntU=",
+			"path": "github.com/emicklei/go-restful",
+			"revision": "0d9b078e59e9364cc96f84e6aaa268d74f2a0449",
+			"revisionTime": "2019-03-03T14:26:05Z"
+		},
+		{
+			"checksumSHA1": "cmMRhVloZSNFibXdGVdQRwp1PAw=",
+			"path": "github.com/emicklei/go-restful-swagger12",
+			"revision": "7524189396c68dc4b04d53852f9edc00f816b123",
+			"revisionTime": "2017-09-26T06:31:55Z",
+			"tree": true
+		},
+		{
+			"checksumSHA1": "KJuY6p4fqLtSC+Uvv7AQ8gLy8aw=",
+			"path": "github.com/emicklei/go-restful/log",
+			"revision": "0d9b078e59e9364cc96f84e6aaa268d74f2a0449",
+			"revisionTime": "2019-03-03T14:26:05Z"
+		},
+		{
+			"checksumSHA1": "Z7opAUYaWhAvx1qd1dWXdm9Ra6Q=",
+			"path": "github.com/json-iterator/go",
+			"revision": "0ff49de124c6f76f8494e194af75bde0f1a49a29",
+			"revisionTime": "2019-03-06T14:29:09Z"
+		},
+		{
+			"checksumSHA1": "R7UwDjqiaLRoaEanrANwPOfbgN4=",
+			"path": "github.com/modern-go/concurrent",
+			"revision": "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94",
+			"revisionTime": "2018-03-06T01:26:44Z"
+		},
+		{
+			"checksumSHA1": "SnVnj87vJdiHFJUcwdL03T0ZMhI=",
+			"path": "github.com/modern-go/reflect2",
+			"revision": "94122c33edd36123c84d5368cfb2b69df93a0ec8",
+			"revisionTime": "2018-07-18T01:23:57Z"
+		},
+		{
+			"checksumSHA1": "Q7s7+DH7pzgbUoPhqBs4BQNS9CQ=",
+			"path": "github.com/xfali/goid",
+			"revision": "7650c15f1eccd085a578b154478e58ecccf350d1",
+			"revisionTime": "2019-03-01T09:37:04Z",
+			"tree": true
+		}
+	],
+	"rootPath": "oauth2"
+}
