@@ -17,16 +17,20 @@ import (
 	"oauth2/defines"
 	"oauth2/buildin"
 	"runtime"
+	"github.com/xfali/goid"
+	"oauth2/util"
 )
 
 type OAuth2 struct {
-	cm       defines.ClientManager
-	ErrorLog *log.Logger
+	ClientManager defines.ClientManager
+	ErrorLog      *log.Logger
+	LogHttpInfo   bool
 }
 
 func New() *OAuth2 {
 	return &OAuth2{
-		cm: buildin.NewDefaultClientManager(),
+		ClientManager: buildin.NewDefaultClientManager(),
+		LogHttpInfo:   true,
 	}
 }
 
@@ -62,32 +66,7 @@ func (auth *OAuth2) RegisterTo(c *restful.Container) {
 	c.Add(ws)
 }
 
-func (auth *OAuth2) wrapRouteFunction(function restful.RouteFunction) restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
-		defer func() {
-			if err := recover(); err != nil && err != http.ErrAbortHandler {
-				const size = 64 << 10
-				buf := make([]byte, size)
-				buf = buf[:runtime.Stack(buf, false)]
-				auth.logf("http: panic serving %v: %v\n%s", request.Request.RemoteAddr, err, buf)
-				response.WriteErrorString(http.StatusInternalServerError, "内部错误")
-			}
-		}()
-
-		function(request, response)
-	}
-}
-
-func (auth *OAuth2) logf(format string, args ...interface{}) {
-	if auth.ErrorLog != nil {
-		auth.ErrorLog.Printf(format, args...)
-	} else {
-		log.Printf(format, args...)
-	}
-}
-
 func (auth *OAuth2) auth(request *restful.Request, response *restful.Response) {
-	panic("test")
 	response_type := request.QueryParameter("response_type")
 	client_id := request.QueryParameter("client_id")
 	redirect_uri := request.QueryParameter("redirect_uri")
@@ -99,7 +78,7 @@ func (auth *OAuth2) auth(request *restful.Request, response *restful.Response) {
 }
 
 func (auth *OAuth2) createClient(request *restful.Request, response *restful.Response) {
-	clientInfo, err := auth.cm.CreateClient()
+	clientInfo, err := auth.ClientManager.CreateClient()
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 	}
@@ -112,7 +91,7 @@ func (auth *OAuth2) createClient(request *restful.Request, response *restful.Res
 
 func (auth *OAuth2) updateClient(request *restful.Request, response *restful.Response) {
 	client_id := request.PathParameter("client_id")
-	secret, err := auth.cm.UpdateClient(client_id)
+	secret, err := auth.ClientManager.UpdateClient(client_id)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 	}
@@ -121,9 +100,43 @@ func (auth *OAuth2) updateClient(request *restful.Request, response *restful.Res
 
 func (auth *OAuth2) deleteClient(request *restful.Request, response *restful.Response) {
 	client_id := request.PathParameter("client_id")
-	err := auth.cm.DeleteClient(client_id)
+	err := auth.ClientManager.DeleteClient(client_id)
 	if err != nil {
 		response.WriteError(http.StatusInternalServerError, err)
 	}
 	response.WriteHeader(http.StatusOK)
+}
+
+func (auth *OAuth2) wrapRouteFunction(function restful.RouteFunction) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		defer func() {
+			if err := recover(); err != nil && err != http.ErrAbortHandler {
+				const size = 64 << 10
+				buf := make([]byte, size)
+				buf = buf[:runtime.Stack(buf, false)]
+				auth.logf("http: panic serving %v: %v\n%s", request.Request.RemoteAddr, err, buf)
+				response.WriteErrorString(http.StatusInternalServerError, "内部错误")
+			}
+		}()
+
+		id := ""
+		if auth.LogHttpInfo {
+			id = goid.RandomId(32)
+			util.LogRequest(id, auth.logf, request)
+		}
+
+		function(request, response)
+
+		if auth.LogHttpInfo {
+			util.LogResponse(id, auth.logf, response)
+		}
+	}
+}
+
+func (auth *OAuth2) logf(format string, args ...interface{}) {
+	if auth.ErrorLog != nil {
+		auth.ErrorLog.Printf(format, args...)
+	} else {
+		log.Printf(format, args...)
+	}
 }
