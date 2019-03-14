@@ -12,3 +12,10 @@ type ClientInfo struct {
     ClientId     string `json:"client_id"`
     ClientSecret string `json:"client_secret"`
 }
+
+type ClientManager interface {
+    CreateClient() (ClientInfo, error)
+    QuerySecret(string) (string, error)
+    UpdateClient(string) (string, error)
+    DeleteClient(string) error
+}

@@ -15,16 +15,16 @@ import (
     "log"
     "net/http"
     "oauth2/defines"
-    "oauth2/utils"
+    "oauth2/buildin"
 )
 
 type OAuth2 struct {
-    ClientCreator func() defines.ClientInfo
+    cm defines.ClientManager
 }
 
 func New() *OAuth2 {
     return &OAuth2{
-        utils.DefaultClientGenerator,
+        cm: buildin.NewDefaultClientManager(),
     }
 }
 
@@ -44,9 +44,18 @@ func (auth *OAuth2) RegisterTo(c *restful.Container) {
         Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
         Param(ws.QueryParameter("state", "状态").DataType("string")))
 
-    ws.Route(ws.POST("").
-        To(auth.register).
-        Doc("方法描述：增加用户"))
+    //for test
+    ws.Route(ws.POST("/client").
+        To(auth.createClient).
+        Doc("方法描述：增加client"))
+    ws.Route(ws.PUT("/client").
+        To(auth.updateClient).
+        Doc("方法描述：更新密钥").
+        Param(ws.BodyParameter("client_id", "client_id").DataType("string")))
+    ws.Route(ws.DELETE("/client").
+        To(auth.deleteClient).
+        Doc("方法描述：删除client").
+        Param(ws.PathParameter("client_id", "client_id").DataType("string")))
 
     c.Add(ws)
 }
@@ -62,11 +71,32 @@ func (auth *OAuth2) auth(request *restful.Request, response *restful.Response) {
     io.WriteString(response.ResponseWriter, "this would be a normal response")
 }
 
-func (auth *OAuth2) register(request *restful.Request, response *restful.Response) {
-    clientInfo := auth.ClientCreator()
+func (auth *OAuth2) createClient(request *restful.Request, response *restful.Response) {
+    clientInfo, err := auth.cm.CreateClient()
+    if err != nil {
+        response.WriteError(http.StatusInternalServerError, err)
+    }
     b, err := json.Marshal(clientInfo)
     if err != nil {
         response.WriteError(http.StatusInternalServerError, err)
     }
     response.Write(b)
+}
+
+func (auth *OAuth2) updateClient(request *restful.Request, response *restful.Response) {
+    client_id := request.PathParameter("client_id")
+    secret, err := auth.cm.UpdateClient(client_id)
+    if err != nil {
+        response.WriteError(http.StatusInternalServerError, err)
+    }
+    io.WriteString(response.ResponseWriter, secret)
+}
+
+func (auth *OAuth2) deleteClient(request *restful.Request, response *restful.Response) {
+    client_id := request.PathParameter("client_id")
+    err := auth.cm.DeleteClient(client_id)
+    if err != nil {
+        response.WriteError(http.StatusInternalServerError, err)
+    }
+    response.WriteHeader(http.StatusOK)
 }
