@@ -22,7 +22,6 @@ type dataEntity struct {
 type DefaultDataManager struct {
 	PurgeInterval time.Duration
 	db            map[interface{}]dataEntity
-	dataChan      chan dataEntity
 	stop          chan bool
 	mutex         sync.Mutex
 }
@@ -33,7 +32,6 @@ func NewDefaultDataManager(PurgeInterval time.Duration) *DefaultDataManager {
 	}
 	ret := &DefaultDataManager{
 		db:            map[interface{}]dataEntity{},
-		dataChan:      make(chan dataEntity),
 		stop:          make(chan bool),
 		PurgeInterval: PurgeInterval,
 	}
