@@ -27,7 +27,7 @@ func TestTimer(t *testing.T) {
 }
 
 func TestDataManager(t *testing.T) {
-    dm := buildin.NewDefaultDataManager(time.Millisecond)
+    dm := buildin.NewDefaultDataManager(0)
 
     dm.Set("123", "456", time.Second)
 

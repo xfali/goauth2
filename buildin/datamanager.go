@@ -54,6 +54,8 @@ func NewDefaultDataManager(PurgeInterval time.Duration) *DefaultDataManager {
 				select {
 				case <-ret.stop:
 					return
+				default:
+
 				}
 				ret.purge()
 
