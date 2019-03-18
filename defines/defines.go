@@ -8,6 +8,8 @@
 
 package defines
 
+import "time"
+
 type ClientInfo struct {
     ClientId     string `json:"client_id"`
     ClientSecret string `json:"client_secret"`
@@ -18,4 +20,10 @@ type ClientManager interface {
     QuerySecret(string) (string, error)
     UpdateClient(string) (string, error)
     DeleteClient(string) error
+}
+
+type DataManager interface {
+    Set(key ,value string, duration time.Duration) error
+    Get(key string) string
+    Close()
 }

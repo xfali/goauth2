@@ -42,8 +42,9 @@ func main(){
     //swagger.InstallSwaggerService(config)
 
 
-    u := oauth2.New()
-    u.RegisterTo(wsContainer)
+    auth := oauth2.New()
+    auth.RegisterTo(wsContainer)
+    defer auth.Close()
 
     log.Println("start listening on localhost:8080")
     server := &http.Server{Addr: ":8080", Handler: wsContainer}
