@@ -97,10 +97,10 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         To(auth.wrapRouteFunction(auth.token)).
         Doc("方法描述：验证").
         Param(ws.BodyParameter("grant_type", "应答类型").DataType("string")).
-        Param(ws.QueryParameter("client_id", "client_id").DataType("string")).
-        Param(ws.QueryParameter("redirect_uri", "重定向地址").DataType("string")).
-        Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
-        Param(ws.QueryParameter("state", "状态").DataType("string")))
+        Param(ws.BodyParameter("code", "client_id").DataType("string")).
+        Param(ws.BodyParameter("redirect_uri", "重定向地址").DataType("string")).
+        Param(ws.BodyParameter("client_id", "授权范围").DataType("string")).
+        Param(ws.BodyParameter("client_secret", "状态").DataType("string")))
 
     //for test
     ws.Route(ws.POST("/client").
