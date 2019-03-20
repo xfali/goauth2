@@ -15,6 +15,14 @@ type ClientInfo struct {
     ClientSecret string `json:"client_secret"`
 }
 
+type Token struct {
+    AccessToken  string `json:"access_token"`
+    RefreshToken string `json:"refresh_token"`
+    TokenType    string `json:"token_type"`
+    ExpiresIn    int `json:"expires_in"`
+    Scope        string `json:"scope"`
+}
+
 type ClientManager interface {
     CreateClient() (ClientInfo, error)
     QuerySecret(string) (string, error)
@@ -23,7 +31,8 @@ type ClientManager interface {
 }
 
 type DataManager interface {
-    Set(key ,value string, duration time.Duration) error
-    Get(key string) string
+    Set(key, value string, duration time.Duration) error
+    Get(key string) (string, error)
+    Del(key string) error
     Close()
 }

@@ -43,7 +43,7 @@ func main(){
 
 
     auth := oauth2.New()
-    auth.RegisterTo(wsContainer)
+    auth.Handle(wsContainer)
     defer auth.Close()
 
     log.Println("start listening on localhost:8080")

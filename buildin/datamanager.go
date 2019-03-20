@@ -12,6 +12,7 @@ import (
 	"time"
 	"sync"
 	"runtime"
+	"errors"
 )
 
 type dataEntity struct {
@@ -103,15 +104,26 @@ func (dm *DefaultDataManager) innerGet(key interface{}) interface{} {
 	}
 }
 
+func (dm *DefaultDataManager) innerDel(key interface{}) {
+	dm.mutex.Lock()
+	defer dm.mutex.Unlock()
+	delete(dm.db, key)
+}
+
 func (dm *DefaultDataManager) Set(key, value string, expireIn time.Duration) error {
 	return dm.innerSet(key, value, expireIn)
 }
 
-func (dm *DefaultDataManager) Get(key string) string {
+func (dm *DefaultDataManager) Get(key string) (string, error) {
 	v := dm.innerGet(key)
 	if v == nil {
-		return ""
+		return "", errors.New("Not found")
 	} else {
-		return v.(string)
+		return v.(string), nil
 	}
+}
+
+func (dm *DefaultDataManager) Del(key string) error {
+	dm.innerDel(key)
+	return nil
 }
