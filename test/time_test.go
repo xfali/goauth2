@@ -12,11 +12,9 @@ import (
     "fmt"
     "testing"
     "time"
-    "oauth2/buildin"
 )
 
 func TestTimer(t *testing.T) {
-    //timer := time.NewTicker(time.Second)
     timer := time.NewTimer(time.Second)
     for {
         select {
@@ -26,18 +24,12 @@ func TestTimer(t *testing.T) {
     }
 }
 
-func TestDataManager(t *testing.T) {
-    dm := buildin.NewDefaultDataManager(0)
-
-    dm.Set("123", "456", time.Second)
-
-    t.Logf("value is %s\n", dm.Get("123"))
-
-    time.Sleep(time.Second)
-
-    t.Logf("After 1 second value is %s\n", dm.Get("123"))
-
-    time.Sleep(time.Millisecond)
-
-    t.Logf("After 1 second 1 Millisecond value is %s\n", dm.Get("123"))
+func TestTicker(t *testing.T) {
+    timer := time.NewTicker(time.Second)
+    for {
+        select {
+        case <-timer.C:
+            fmt.Println("timeout")
+        }
+    }
 }
