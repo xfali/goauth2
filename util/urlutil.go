@@ -11,7 +11,7 @@ package util
 import "strings"
 
 func AddParam(url string, param map[string]string) string {
-    if strings.LastIndex(url, "?") != -1 {
+    if strings.LastIndex(url, "?") == -1 {
         url += "?"
     }
 

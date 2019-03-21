@@ -23,6 +23,12 @@ func ProcessRespCodeType(auth *OAuth2, request *restful.Request, response *restf
     //scope := request.QueryParameter("scope")
     state := request.QueryParameter("state")
 
+    errCode := auth.EventListener(client_id, defines.AuthorizationCodeEvent)
+    if errCode != nil {
+        errCode.Format()
+        response.WriteError(errCode.HttpStatus, errCode)
+    }
+
     code := goid.RandomId(30)
     auth.DataManager.Set(code, client_id, auth.CodeExpireTime)
     param := map[string] string{}

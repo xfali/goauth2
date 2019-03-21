@@ -23,15 +23,15 @@ import (
 )
 
 const (
-    RESPONSE_TYPE_CODE  = "code"
-    RESPONSE_TYPE_TOKEN = "token"
-    GRANT_TYPE_CODE = "authorization_code"
-    GRANT_TYPE_IMPLICIT = "implicit"
-    GRANT_TYPE_PASSWORD = "password"
-    GRANT_TYPE_CLIENTCERD = "client credentials"
-    GRANT_TYPE_DEVICECODE = "device code"
+    RESPONSE_TYPE_CODE      = "code"
+    RESPONSE_TYPE_TOKEN     = "token"
+    GRANT_TYPE_CODE         = "authorization_code"
+    GRANT_TYPE_IMPLICIT     = "implicit"
+    GRANT_TYPE_PASSWORD     = "password"
+    GRANT_TYPE_CLIENTCERD   = "client credentials"
+    GRANT_TYPE_DEVICECODE   = "device code"
     GRANT_TYPE_REFRESHTOKEN = "Refresh Token"
-    CODE_EXPIRE_TIME    = 10 * time.Minute
+    CODE_EXPIRE_TIME        = 10 * time.Minute
 )
 
 type ResponseTypeFunc func(auth *OAuth2, request *restful.Request, response *restful.Response)
@@ -40,6 +40,7 @@ type GrantTypeFunc func(auth *OAuth2, request *restful.Request, response *restfu
 type OAuth2 struct {
     ClientManager  defines.ClientManager
     DataManager    defines.DataManager
+    EventListener  defines.EventListener
     CodeExpireTime time.Duration
     ErrorLog       *log.Logger
     LogHttpInfo    bool
@@ -52,6 +53,7 @@ func New() *OAuth2 {
     ret := &OAuth2{
         ClientManager:   buildin.NewDefaultClientManager(),
         DataManager:     buildin.NewDefaultDataManager(0),
+        EventListener:   buildin.DefaultEventListener,
         CodeExpireTime:  CODE_EXPIRE_TIME,
         LogHttpInfo:     true,
         processRespMap:  map[string]ResponseTypeFunc{},
@@ -80,11 +82,11 @@ func (auth *OAuth2) RegisterGrantProcessor(grant_type string, function GrantType
 func (auth *OAuth2) Handle(c *restful.Container) {
     ws := new(restful.WebService)
     //设置匹配的schema和路径
-    ws.Path("/auth").Consumes("*/*").Produces("*/*")
+    ws.Path("/oauth2").Consumes("*/*").Produces("*/*")
 
     //设置不同method对应的方法，参数以及参数描述和类型
     //参数:分为路径上的参数,query层面的参数,Header中的参数
-    ws.Route(ws.GET("").
+    ws.Route(ws.GET("/authorize").
         To(auth.wrapRouteFunction(auth.auth)).
         Doc("方法描述：验证").
         Param(ws.QueryParameter("response_type", "应答类型").DataType("string")).
@@ -93,7 +95,13 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
         Param(ws.QueryParameter("state", "状态").DataType("string")))
 
-    ws.Route(ws.POST("").
+    ws.Route(ws.GET("/test").
+        To(auth.wrapRouteFunction(test_redirect)).
+        Doc("方法描述：验证").
+        Param(ws.QueryParameter("code", "应答类型").DataType("string")).
+        Param(ws.QueryParameter("state", "状态").DataType("string")))
+
+    ws.Route(ws.POST("/token").
         To(auth.wrapRouteFunction(auth.token)).
         Doc("方法描述：验证").
         Param(ws.BodyParameter("grant_type", "应答类型").DataType("string")).
@@ -116,6 +124,11 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         Param(ws.PathParameter("client_id", "client_id").DataType("string")))
 
     c.Add(ws)
+}
+
+func test_redirect(request *restful.Request, response *restful.Response) {
+    code := request.QueryParameter("code")
+    log.Printf("code is %s\n", code)
 }
 
 func (auth *OAuth2) auth(request *restful.Request, response *restful.Response) {

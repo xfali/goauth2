@@ -10,6 +10,13 @@ package defines
 
 import "time"
 
+const(
+    //Authorization Code类型授权（网页授权）事件
+    AuthorizationCodeEvent = iota
+    RequestRefreshTokenEvent
+    RequestAccessTokenEvent
+)
+
 type ClientInfo struct {
     ClientId     string `json:"client_id"`
     ClientSecret string `json:"client_secret"`
@@ -36,3 +43,5 @@ type DataManager interface {
     Del(key string) error
     Close()
 }
+
+type EventListener func(clientId string, eventType int) *ErrCode

@@ -1,6 +1,9 @@
 package defines
 
-import "fmt"
+import (
+    "fmt"
+    "net/http"
+)
 
 //const(
 //    CODE_IS_MISSING = 1
@@ -18,13 +21,26 @@ var CHECK_CLIENT_ID_ERROR *ErrCode = NewErrCode("1006", "Check client_id error")
 var CLINET_SECRET_NOT_MATCH *ErrCode = NewErrCode("1007", "client_secret is Not match")
 
 type ErrCode struct {
-    Code    string `json:"code"`
-    Msg     string `json:"msg"`
+    Code       string `json:"code"`
+    Msg        string `json:"msg"`
+    HttpStatus int
+
     jsonStr string
 }
 
 func NewErrCode(code string, msg string) *ErrCode {
-    return &ErrCode{code, msg, fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", code, msg)}
+    return &ErrCode{code, msg, http.StatusOK,fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", code, msg)}
+}
+
+func NewErrCodeWithHttpStatus(code string, msg string, httpstatus int) *ErrCode {
+    return &ErrCode{code, msg, httpstatus,fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", code, msg)}
+}
+
+func (errcode *ErrCode) Format() *ErrCode {
+    if errcode.jsonStr == "" {
+        errcode.jsonStr = fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", errcode.Code, errcode.Msg)
+    }
+    return errcode
 }
 
 func (errcode *ErrCode) Error() string {
