@@ -195,10 +195,7 @@ func ProcessGrantPasswordType(auth *OAuth2, request *restful.Request, response *
     //    return
     //}
 
-    client_id, client_secret, err := parseBasicInfo(basic)
-    if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, err.Error())
-    }
+    var client_id, client_secret string
 
     if basic == "" {
         tmp, err := request.BodyParameter("client_id")
@@ -214,6 +211,12 @@ func ProcessGrantPasswordType(auth *OAuth2, request *restful.Request, response *
             return
         }
         client_secret = tmp2
+    } else {
+        var err error = nil
+        client_id, client_secret, err = parseBasicInfo(basic)
+        if err != nil {
+            response.WriteErrorString(http.StatusBadRequest, err.Error())
+        }
     }
 
     //check client_id and client_secret
@@ -292,11 +295,7 @@ func ProcessGrantClientCredentialsType(auth *OAuth2, request *restful.Request, r
     //    return
     //}
 
-    client_id, client_secret, err := parseBasicInfo(basic)
-    if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, err.Error())
-    }
-
+    var client_id, client_secret string
     if basic == "" {
         tmp, err := request.BodyParameter("client_id")
         if err != nil {
@@ -311,6 +310,12 @@ func ProcessGrantClientCredentialsType(auth *OAuth2, request *restful.Request, r
             return
         }
         client_secret = tmp2
+    } else {
+        var err error = nil
+        client_id, client_secret, err = parseBasicInfo(basic)
+        if err != nil {
+            response.WriteErrorString(http.StatusBadRequest, err.Error())
+        }
     }
 
     //check client_id and client_secret
@@ -371,11 +376,7 @@ func ProcessGrantRefreshTokenType(auth *OAuth2, request *restful.Request, respon
     //    return
     //}
 
-    client_id, client_secret, err := parseBasicInfo(basic)
-    if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, err.Error())
-    }
-
+    var client_id, client_secret string
     if basic == "" {
         tmp, err := request.BodyParameter("client_id")
         if err != nil {
@@ -390,6 +391,12 @@ func ProcessGrantRefreshTokenType(auth *OAuth2, request *restful.Request, respon
             return
         }
         client_secret = tmp2
+    } else {
+        var err error = nil
+        client_id, client_secret, err = parseBasicInfo(basic)
+        if err != nil {
+            response.WriteErrorString(http.StatusBadRequest, err.Error())
+        }
     }
 
     //check client_id and client_secret
