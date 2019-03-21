@@ -28,9 +28,9 @@ const (
     GRANT_TYPE_CODE         = "authorization_code"
     GRANT_TYPE_IMPLICIT     = "implicit"
     GRANT_TYPE_PASSWORD     = "password"
-    GRANT_TYPE_CLIENTCERD   = "client credentials"
+    GRANT_TYPE_CLIENTCERD   = "client_credentials"
     GRANT_TYPE_DEVICECODE   = "device code"
-    GRANT_TYPE_REFRESHTOKEN = "Refresh Token"
+    GRANT_TYPE_REFRESHTOKEN = "refresh_token"
     CODE_EXPIRE_TIME        = 10 * time.Minute
 )
 
@@ -38,6 +38,7 @@ type ResponseTypeFunc func(auth *OAuth2, request *restful.Request, response *res
 type GrantTypeFunc func(auth *OAuth2, request *restful.Request, response *restful.Response)
 
 type OAuth2 struct {
+    UserManager    defines.UserManager
     ClientManager  defines.ClientManager
     DataManager    defines.DataManager
     EventListener  defines.EventListener
@@ -51,6 +52,7 @@ type OAuth2 struct {
 
 func New() *OAuth2 {
     ret := &OAuth2{
+        UserManager:     buildin.NewDefaultUserManager(),
         ClientManager:   buildin.NewDefaultClientManager(),
         DataManager:     buildin.NewDefaultDataManager(0),
         EventListener:   buildin.DefaultEventListener,
@@ -61,8 +63,12 @@ func New() *OAuth2 {
     }
 
     ret.RegisterRespProcessor(RESPONSE_TYPE_CODE, ProcessRespCodeType)
-    ret.RegisterRespProcessor(RESPONSE_TYPE_TOKEN, ProcessRespTokenType)
+    //It is generally not recommended to use the implicit flow
+    //ret.RegisterRespProcessor(RESPONSE_TYPE_TOKEN, ProcessRespTokenType)
     ret.RegisterGrantProcessor(GRANT_TYPE_CODE, ProcessGrantCodeType)
+    ret.RegisterGrantProcessor(GRANT_TYPE_PASSWORD, ProcessGrantPasswordType)
+    ret.RegisterGrantProcessor(GRANT_TYPE_CLIENTCERD, ProcessGrantClientCredentialsType)
+    ret.RegisterGrantProcessor(GRANT_TYPE_REFRESHTOKEN, ProcessGrantRefreshTokenType)
 
     return ret
 }
@@ -95,20 +101,17 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
         Param(ws.QueryParameter("state", "状态").DataType("string")))
 
-    ws.Route(ws.GET("/test").
-        To(auth.wrapRouteFunction(test_redirect)).
-        Doc("方法描述：验证").
-        Param(ws.QueryParameter("code", "应答类型").DataType("string")).
-        Param(ws.QueryParameter("state", "状态").DataType("string")))
-
     ws.Route(ws.POST("/token").
         To(auth.wrapRouteFunction(auth.token)).
         Doc("方法描述：验证").
+        Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
         Param(ws.BodyParameter("grant_type", "应答类型").DataType("string")).
         Param(ws.BodyParameter("code", "client_id").DataType("string")).
         Param(ws.BodyParameter("redirect_uri", "重定向地址").DataType("string")).
         Param(ws.BodyParameter("client_id", "授权范围").DataType("string")).
-        Param(ws.BodyParameter("client_secret", "状态").DataType("string")))
+        Param(ws.BodyParameter("client_secret", "状态").DataType("string")).
+        Param(ws.BodyParameter("username", "授权范围").DataType("string")).
+        Param(ws.BodyParameter("password", "状态").DataType("string")))
 
     //for test
     ws.Route(ws.POST("/client").
@@ -122,6 +125,12 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         To(auth.wrapRouteFunction(auth.deleteClient)).
         Doc("方法描述：删除client").
         Param(ws.PathParameter("client_id", "client_id").DataType("string")))
+
+    ws.Route(ws.GET("/test").
+        To(auth.wrapRouteFunction(test_redirect)).
+        Doc("方法描述：验证").
+        Param(ws.QueryParameter("code", "应答类型").DataType("string")).
+        Param(ws.QueryParameter("state", "状态").DataType("string")))
 
     c.Add(ws)
 }

@@ -3,6 +3,13 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "DzXbIHM1WOuC3WwvZv8bTTnEs9g=",
+			"path": "github.com/dgrijalva/jwt-go",
+			"revision": "3af4c746e1c248ee8491a3e0c6f7a9cd831e95f8",
+			"revisionTime": "2018-09-21T17:23:15Z",
+			"tree": true
+		},
+		{
 			"checksumSHA1": "Wz6ul0NtN8Vc7iZOJxRJEIE2ntU=",
 			"path": "github.com/emicklei/go-restful",
 			"revision": "0d9b078e59e9364cc96f84e6aaa268d74f2a0449",

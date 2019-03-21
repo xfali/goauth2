@@ -8,6 +8,8 @@
 
 package buildin
 
-func DefaultEventListener(clientId string, eventType int) error {
+import "oauth2/defines"
+
+func DefaultEventListener(clientId string, eventType int) *defines.ErrCode {
     return nil
 }

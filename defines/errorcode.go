@@ -19,6 +19,16 @@ var CLINET_ID_NOT_MATCH *ErrCode = NewErrCode("1004", "client_id is Not match")
 var CLIENT_SECRET_MISSING *ErrCode = NewErrCode("1005", "client_secret is missing")
 var CHECK_CLIENT_ID_ERROR *ErrCode = NewErrCode("1006", "Check client_id error")
 var CLINET_SECRET_NOT_MATCH *ErrCode = NewErrCode("1007", "client_secret is Not match")
+var REDIRECT_URI_MISSING *ErrCode = NewErrCode("1008", "redirect_uri is missing")
+var PASSWORD_CREDENTIALS_HEAD_MISSING *ErrCode = NewErrCode("1011", "Password Credentials Header: Authorization missing")
+var USERNAME_MISSING *ErrCode = NewErrCode("1012", "username is missing")
+var PASSWORD_MISSING *ErrCode = NewErrCode("1013", "password is missing")
+var PASSWORD_NOT_MATCH *ErrCode = NewErrCode("1014", "password is not match")
+var AUTHORIZATION_BASIC_ERROR *ErrCode = NewErrCode("1015", "authorization basic error")
+var REFRESH_TOKEN_MISSING *ErrCode = NewErrCode("1016", "refresh token is missing")
+var REFRESH_TOKEN_NOT_FOUND *ErrCode = NewErrCode("1017", "refresh token not found")
+var GENERATE_ACCESSTOKEN_ERROR *ErrCode = NewErrCode("2001", "generate access token error")
+var GENERATE_REFRESHTOKEN_ERROR *ErrCode = NewErrCode("2002", "generate refresh token error")
 
 type ErrCode struct {
     Code       string `json:"code"`
@@ -36,7 +46,7 @@ func NewErrCodeWithHttpStatus(code string, msg string, httpstatus int) *ErrCode 
     return &ErrCode{code, msg, httpstatus,fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", code, msg)}
 }
 
-func (errcode *ErrCode) Format() *ErrCode {
+func (errcode *ErrCode) format() *ErrCode {
     if errcode.jsonStr == "" {
         errcode.jsonStr = fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", errcode.Code, errcode.Msg)
     }
@@ -44,5 +54,5 @@ func (errcode *ErrCode) Format() *ErrCode {
 }
 
 func (errcode *ErrCode) Error() string {
-    return errcode.jsonStr
+    return errcode.format().jsonStr
 }

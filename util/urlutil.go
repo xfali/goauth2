@@ -26,3 +26,11 @@ func AddParam(url string, param map[string]string) string {
 
     return url
 }
+
+func AddFragment(url string, fragmentKey string, fragmentValue string) string {
+    kv := ""
+    if fragmentValue != "" {
+        kv = "="
+    }
+    return url + "#" + fragmentKey + kv + fragmentValue
+}
