@@ -230,3 +230,42 @@ func (auth *OAuth2) logf(format string, args ...interface{}) {
         log.Printf(format, args...)
     }
 }
+
+func (auth *OAuth2) Run(addr string) {
+    wsContainer := restful.NewContainer()
+
+    // 跨域过滤器
+    cors := restful.CrossOriginResourceSharing{
+        ExposeHeaders:  []string{"X-My-Header"},
+        AllowedHeaders: []string{"Content-Type", "Accept"},
+        AllowedMethods: []string{"GET", "POST"},
+        CookiesAllowed: false,
+        Container:      wsContainer}
+    wsContainer.Filter(cors.Filter)
+
+    // Add container filter to respond to OPTIONS
+    wsContainer.Filter(wsContainer.OPTIONSFilter)
+
+    //config := swagger.Config{
+    //    WebServices:    restful.DefaultContainer.RegisteredWebServices(), // you control what services are visible
+    //    WebServicesUrl: "http://localhost:8080",
+    //    ApiPath:        "/apidocs.json",
+    //    ApiVersion:     "V1.0",
+    //    // Optionally, specify where the UI is located
+    //    SwaggerPath:     "/apidocs/",
+    //    SwaggerFilePath: "D:/gowork/oauth2/doublegao/experiment/restful/dist"}
+    //swagger.RegisterSwaggerService(config, wsContainer)
+    //swagger.InstallSwaggerService(config)
+
+    auth.Handle(wsContainer)
+    defer auth.Close()
+
+    log.Println("start listening on localhost:8080")
+    server := &http.Server{Addr: addr, Handler: wsContainer}
+    defer server.Close()
+    log.Fatal(server.ListenAndServe())
+}
+
+func Run(addr string) {
+    New().Run(addr)
+}

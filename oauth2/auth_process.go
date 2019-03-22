@@ -17,6 +17,7 @@ import (
     "encoding/json"
     "strings"
     "encoding/base64"
+    "time"
 )
 
 const(
@@ -169,7 +170,7 @@ func ProcessGrantCodeType(auth *OAuth2, request *restful.Request, response *rest
         AccessToken: accessToken,
         RefreshToken: refreshToken,
         TokenType: "bearer",
-        ExpiresIn: int(defines.AccessTokenExpireTime),
+        ExpiresIn: int(defines.AccessTokenExpireTime/time.Second),
         Scope: "",
     }
 
@@ -272,7 +273,7 @@ func ProcessGrantPasswordType(auth *OAuth2, request *restful.Request, response *
         AccessToken: accessToken,
         RefreshToken: refreshToken,
         TokenType: "bearer",
-        ExpiresIn: int(defines.AccessTokenExpireTime),
+        ExpiresIn: int(defines.AccessTokenExpireTime/time.Second),
         Scope: "",
     }
 
@@ -353,7 +354,7 @@ func ProcessGrantClientCredentialsType(auth *OAuth2, request *restful.Request, r
         AccessToken: accessToken,
         RefreshToken: refreshToken,
         TokenType: "bearer",
-        ExpiresIn: int(defines.AccessTokenExpireTime),
+        ExpiresIn: int(defines.AccessTokenExpireTime/time.Second),
         Scope: "",
     }
 
@@ -422,6 +423,17 @@ func ProcessGrantRefreshTokenType(auth *OAuth2, request *restful.Request, respon
         return
     }
 
+    jwt_client_id, err := parseToken(secret, refresh_token)
+    if err != nil {
+        response.WriteErrorString(http.StatusBadRequest, defines.TOKEN_ERROR.Error())
+        return
+    }
+
+    if client_id != jwt_client_id {
+        response.WriteErrorString(http.StatusBadRequest, defines.CHECK_CLIENT_ID_ERROR.Error())
+        return
+    }
+/*
     client_id_saved, err := auth.DataManager.Get(refresh_token_prefix + refresh_token)
     if err != nil {
         response.WriteErrorString(http.StatusBadRequest, defines.REFRESH_TOKEN_NOT_FOUND.Error())
@@ -432,6 +444,7 @@ func ProcessGrantRefreshTokenType(auth *OAuth2, request *restful.Request, respon
         response.WriteErrorString(http.StatusBadRequest, defines.CHECK_CLIENT_ID_ERROR.Error())
         return
     }
+*/
 
     //与请求authorization code时使用的redirect_uri相同。某些资源（API）不需要此参数。
     //redirect_uri, err := request.BodyParameter("redirect_uri")
@@ -444,7 +457,7 @@ func ProcessGrantRefreshTokenType(auth *OAuth2, request *restful.Request, respon
     token := defines.Token{
         AccessToken: accessToken,
         TokenType: "bearer",
-        ExpiresIn: int(defines.AccessTokenExpireTime),
+        ExpiresIn: int(defines.AccessTokenExpireTime/time.Second),
         Scope: "",
     }
 

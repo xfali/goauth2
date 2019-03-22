@@ -36,11 +36,11 @@ type ClientInfo struct {
 }
 
 type Token struct {
-    AccessToken  string `json:"access_token"`
-    RefreshToken string `json:"refresh_token"`
-    TokenType    string `json:"token_type"`
-    ExpiresIn    int    `json:"expires_in"`
-    Scope        string `json:"scope"`
+    AccessToken  string `json:"access_token,omitempty"`
+    RefreshToken string `json:"refresh_token,omitempty"`
+    TokenType    string `json:"token_type,omitempty"`
+    ExpiresIn    int    `json:"expires_in,omitempty"`
+    Scope        string `json:"scope,omitempty"`
 }
 
 type ClientManager interface {

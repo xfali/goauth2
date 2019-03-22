@@ -29,6 +29,7 @@ var REFRESH_TOKEN_MISSING *ErrCode = NewErrCode("1016", "refresh token is missin
 var REFRESH_TOKEN_NOT_FOUND *ErrCode = NewErrCode("1017", "refresh token not found")
 var GENERATE_ACCESSTOKEN_ERROR *ErrCode = NewErrCode("2001", "generate access token error")
 var GENERATE_REFRESHTOKEN_ERROR *ErrCode = NewErrCode("2002", "generate refresh token error")
+var TOKEN_ERROR *ErrCode = NewErrCode("2003", "解析Token发生错误")
 
 type ErrCode struct {
     Code       string `json:"code"`
