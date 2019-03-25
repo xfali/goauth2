@@ -26,8 +26,10 @@ const (
 )
 
 const (
-    AccessTokenExpireTime  = 2 * time.Hour
-    RefreshTokenExpireTime = 30 * 24 * time.Hour
+    AuthorizationCodeExpireTime = 1 * time.Minute
+    AccessTokenExpireTime       = 2 * time.Hour
+    RefreshTokenExpireTime      = 30 * 24 * time.Hour
+    TokenKeepExpireTime         = 5 * time.Minute
 )
 
 type ClientInfo struct {
@@ -60,10 +62,24 @@ type UserManager interface {
 }
 
 type DataManager interface {
-    Set(key, value string, duration time.Duration) error
-    Get(key string) (string, error)
-    Del(key string) error
+    //初始化
+    Init()
+    //关闭
     Close()
+    //设置一个值，含过期时间
+    Set(key, value string, duration time.Duration) error
+    //根据key获取value
+    Get(key string) (string, error)
+    //删除key
+    Del(key string) error
+    //根据key设置key过期时间
+    SetExpire(key string, expireIn time.Duration) error
+    //获得key过期时间
+    TTL(key string) (time.Duration, error)
+    //开启事务
+    Multi() error
+    //执行事务
+    Exec() error
 }
 
 type EventListener func(clientId string, eventType int) *ErrCode

@@ -9,121 +9,166 @@
 package buildin
 
 import (
-	"time"
-	"sync"
-	"runtime"
-	"errors"
+    "errors"
+    "runtime"
+    "sync"
+    "time"
 )
 
 type dataEntity struct {
-	value      interface{}
-	expireTime time.Duration
+    value      interface{}
+    expireTime time.Duration
 }
 
 type DefaultDataManager struct {
-	PurgeInterval time.Duration
-	db            map[interface{}]dataEntity
-	stop          chan bool
-	mutex         sync.Mutex
+    PurgeInterval time.Duration
+    db            map[interface{}]dataEntity
+    stop          chan bool
+    mutex         sync.Mutex
 }
 
 func NewDefaultDataManager(PurgeInterval time.Duration) *DefaultDataManager {
-	if PurgeInterval <= 0 {
-		PurgeInterval = 0
-	}
-	ret := &DefaultDataManager{
-		db:            map[interface{}]dataEntity{},
-		stop:          make(chan bool),
-		PurgeInterval: PurgeInterval,
-	}
+    if PurgeInterval <= 0 {
+        PurgeInterval = 0
+    }
+    ret := &DefaultDataManager{
+        db:            map[interface{}]dataEntity{},
+        stop:          make(chan bool),
+        PurgeInterval: PurgeInterval,
+    }
 
-	go func() {
-		if ret.PurgeInterval > 0 {
-			timer := time.NewTicker(ret.PurgeInterval)
-			for {
-				select {
-				case <-ret.stop:
-					return
-				case <-timer.C:
-					ret.purge()
-				}
-			}
-		} else {
-			for {
-				select {
-				case <-ret.stop:
-					return
-				default:
+    go func() {
+        if ret.PurgeInterval > 0 {
+            timer := time.NewTicker(ret.PurgeInterval)
+            for {
+                select {
+                case <-ret.stop:
+                    return
+                case <-timer.C:
+                    ret.purge()
+                }
+            }
+        } else {
+            for {
+                select {
+                case <-ret.stop:
+                    return
+                default:
 
-				}
-				ret.purge()
+                }
+                ret.purge()
 
-				runtime.Gosched()
-			}
-		}
-	}()
+                runtime.Gosched()
+            }
+        }
+    }()
 
-	return ret
+    return ret
 }
 
 func (dm *DefaultDataManager) purge() {
-	dm.mutex.Lock()
-	defer dm.mutex.Unlock()
+    dm.mutex.Lock()
+    defer dm.mutex.Unlock()
 
-	now := time.Duration(time.Now().UnixNano())
-	for k, v := range dm.db {
-		if v.expireTime <= now {
-			delete(dm.db, k)
-		}
-	}
+    now := time.Duration(time.Now().UnixNano())
+    for k, v := range dm.db {
+        if v.expireTime <= now {
+            delete(dm.db, k)
+        }
+    }
+}
+
+func (dm *DefaultDataManager) Init() {
+
 }
 
 func (dm *DefaultDataManager) Close() {
-	close(dm.stop)
+    close(dm.stop)
 }
 
 func (dm *DefaultDataManager) innerSet(key, value interface{}, expireIn time.Duration) error {
-	dm.mutex.Lock()
-	defer dm.mutex.Unlock()
+    dm.mutex.Lock()
+    defer dm.mutex.Unlock()
 
-	time := expireIn + time.Duration(time.Now().UnixNano())
-	dm.db[key] = dataEntity{value: value, expireTime: time}
+    time := expireIn + time.Duration(time.Now().UnixNano())
+    dm.db[key] = dataEntity{value: value, expireTime: time}
 
-	return nil
+    return nil
 }
 
 func (dm *DefaultDataManager) innerGet(key interface{}) interface{} {
-	dm.mutex.Lock()
-	defer dm.mutex.Unlock()
+    dm.mutex.Lock()
+    defer dm.mutex.Unlock()
 
-	v, ok := dm.db[key]
-	if ok {
-		return v.value
-	} else {
-		return nil
-	}
+    v, ok := dm.db[key]
+    if ok {
+        return v.value
+    } else {
+        return nil
+    }
 }
 
 func (dm *DefaultDataManager) innerDel(key interface{}) {
-	dm.mutex.Lock()
-	defer dm.mutex.Unlock()
-	delete(dm.db, key)
+    dm.mutex.Lock()
+    defer dm.mutex.Unlock()
+    delete(dm.db, key)
+}
+
+func (dm *DefaultDataManager) innerSetExpire(key interface{}, expireIn time.Duration) error {
+    dm.mutex.Lock()
+    defer dm.mutex.Unlock()
+
+    v, ok := dm.db[key]
+    if ok {
+        v.expireTime = expireIn + time.Duration(time.Now().UnixNano())
+        return nil
+    } else {
+        return errors.New("Key not found")
+    }
+}
+
+func (dm *DefaultDataManager) innerTTL(key string) (time.Duration, error) {
+    dm.mutex.Lock()
+    defer dm.mutex.Unlock()
+
+    v, ok := dm.db[key]
+    if ok {
+        return v.expireTime - time.Duration(time.Now().UnixNano()), nil
+    } else {
+        return 0, errors.New("Key not found")
+    }
 }
 
 func (dm *DefaultDataManager) Set(key, value string, expireIn time.Duration) error {
-	return dm.innerSet(key, value, expireIn)
+    return dm.innerSet(key, value, expireIn)
 }
 
 func (dm *DefaultDataManager) Get(key string) (string, error) {
-	v := dm.innerGet(key)
-	if v == nil {
-		return "", errors.New("Not found")
-	} else {
-		return v.(string), nil
-	}
+    v := dm.innerGet(key)
+    if v == nil {
+        return "", errors.New("Not found")
+    } else {
+        return v.(string), nil
+    }
 }
 
 func (dm *DefaultDataManager) Del(key string) error {
-	dm.innerDel(key)
-	return nil
+    dm.innerDel(key)
+    return nil
+}
+
+func (dm *DefaultDataManager) SetExpire(key string, expireIn time.Duration) error {
+    return dm.innerSetExpire(key, expireIn)
+}
+
+func (dm *DefaultDataManager) TTL(key string) (time.Duration, error) {
+    return dm.TTL(key)
+}
+
+func (dm *DefaultDataManager) Multi() error {
+    return nil
+}
+
+func (dm *DefaultDataManager) Exec() error {
+    return nil
 }

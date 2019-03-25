@@ -62,13 +62,13 @@ func New() *OAuth2 {
         processGrantMap: map[string]GrantTypeFunc{},
     }
 
-    ret.RegisterRespProcessor(RESPONSE_TYPE_CODE, ProcessRespCodeType)
+    ret.RegisterRespProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeCode)
     //It is generally not recommended to use the implicit flow
-    //ret.RegisterRespProcessor(RESPONSE_TYPE_TOKEN, ProcessRespTokenType)
-    ret.RegisterGrantProcessor(GRANT_TYPE_CODE, ProcessGrantCodeType)
-    ret.RegisterGrantProcessor(GRANT_TYPE_PASSWORD, ProcessGrantPasswordType)
-    ret.RegisterGrantProcessor(GRANT_TYPE_CLIENTCERD, ProcessGrantClientCredentialsType)
-    ret.RegisterGrantProcessor(GRANT_TYPE_REFRESHTOKEN, ProcessGrantRefreshTokenType)
+    //ret.RegisterRespProcessor(RESPONSE_TYPE_TOKEN, ProcessRespTypeToken)
+    ret.RegisterGrantProcessor(GRANT_TYPE_CODE, ProcessGrantTypeCode)
+    ret.RegisterGrantProcessor(GRANT_TYPE_PASSWORD, ProcessGrantTypePassword)
+    ret.RegisterGrantProcessor(GRANT_TYPE_CLIENTCERD, ProcessGrantTypeClientCredentials)
+    ret.RegisterGrantProcessor(GRANT_TYPE_REFRESHTOKEN, ProcessGrantTypeRefreshToken)
 
     return ret
 }
@@ -93,10 +93,10 @@ func (auth *OAuth2) Handle(c *restful.Container) {
     //设置不同method对应的方法，参数以及参数描述和类型
     //参数:分为路径上的参数,query层面的参数,Header中的参数
     ws.Route(ws.GET("/authorize").
-        To(auth.wrapRouteFunction(auth.auth)).
+        To(auth.wrapRouteFunction(auth.authorize)).
         Doc("方法描述：验证").
         Param(ws.QueryParameter("response_type", "应答类型").DataType("string")).
-        Param(ws.QueryParameter("client_id", "client_id").DataType("string")).
+        Param(ws.QueryParameter("client_id", "客户端ID").DataType("string")).
         Param(ws.QueryParameter("redirect_uri", "重定向地址").DataType("string")).
         Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
         Param(ws.QueryParameter("state", "状态").DataType("string")))
@@ -105,13 +105,18 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         To(auth.wrapRouteFunction(auth.token)).
         Doc("方法描述：验证").
         Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
-        Param(ws.BodyParameter("grant_type", "应答类型").DataType("string")).
-        Param(ws.BodyParameter("code", "client_id").DataType("string")).
+        Param(ws.BodyParameter("grant_type", "获取类型").DataType("string")).
+        Param(ws.BodyParameter("code", "授权码").DataType("string")).
         Param(ws.BodyParameter("redirect_uri", "重定向地址").DataType("string")).
-        Param(ws.BodyParameter("client_id", "授权范围").DataType("string")).
-        Param(ws.BodyParameter("client_secret", "状态").DataType("string")).
-        Param(ws.BodyParameter("username", "授权范围").DataType("string")).
-        Param(ws.BodyParameter("password", "状态").DataType("string")))
+        Param(ws.BodyParameter("client_id", "客户端ID").DataType("string")).
+        Param(ws.BodyParameter("client_secret", "客户端密码").DataType("string")).
+        Param(ws.BodyParameter("username", "用户名").DataType("string")).
+        Param(ws.BodyParameter("password", "用户密码").DataType("string")))
+
+    ws.Route(ws.GET("/authenticate").
+        To(auth.wrapRouteFunction(auth.authenticate)).
+        Doc("方法描述：验证").
+        Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")))
 
     //for test
     ws.Route(ws.POST("/client").
@@ -140,7 +145,7 @@ func test_redirect(request *restful.Request, response *restful.Response) {
     log.Printf("code is %s\n", code)
 }
 
-func (auth *OAuth2) auth(request *restful.Request, response *restful.Response) {
+func (auth *OAuth2) authorize(request *restful.Request, response *restful.Response) {
     response_type := request.QueryParameter("response_type")
 
     function := auth.processRespMap[response_type]
@@ -165,6 +170,10 @@ func (auth *OAuth2) token(request *restful.Request, response *restful.Response) 
     }
 
     io.WriteString(response.ResponseWriter, "ProcessorNotFound this would be a normal response")
+}
+
+func (auth *OAuth2) authenticate(request *restful.Request, response *restful.Response) {
+    ProcessAccessToken(auth, request, response)
 }
 
 func (auth *OAuth2) createClient(request *restful.Request, response *restful.Response) {
