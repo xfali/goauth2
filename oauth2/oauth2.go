@@ -15,9 +15,9 @@ import (
     "io"
     "log"
     "net/http"
-    "oauth2/buildin"
-    "oauth2/defines"
-    "oauth2/util"
+    "github.com/xfali/oauth2/buildin"
+    "github.com/xfali/oauth2/defines"
+    "github.com/xfali/oauth2/util"
     "runtime"
     "time"
 )

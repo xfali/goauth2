@@ -8,7 +8,7 @@
 
 package buildin
 
-import "oauth2/defines"
+import "github.com/xfali/oauth2/defines"
 
 type DefaultUserManager map[string]string
 

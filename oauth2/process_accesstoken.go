@@ -12,7 +12,7 @@ import (
     "github.com/emicklei/go-restful"
     "io"
     "net/http"
-    "oauth2/defines"
+    "github.com/xfali/oauth2/defines"
 )
 
 func ProcessAccessToken(auth *OAuth2, request *restful.Request, response *restful.Response) {

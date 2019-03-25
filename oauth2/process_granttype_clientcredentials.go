@@ -12,7 +12,7 @@ import (
     "encoding/json"
     "github.com/emicklei/go-restful"
     "net/http"
-    "oauth2/defines"
+    "github.com/xfali/oauth2/defines"
     "time"
 )
 

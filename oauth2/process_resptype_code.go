@@ -12,8 +12,8 @@ import (
     "github.com/emicklei/go-restful"
     "github.com/xfali/goid"
     "net/http"
-    "oauth2/defines"
-    "oauth2/util"
+    "github.com/xfali/oauth2/defines"
+    "github.com/xfali/oauth2/util"
 )
 
 func ProcessRespTypeCode(auth *OAuth2, request *restful.Request, response *restful.Response) {

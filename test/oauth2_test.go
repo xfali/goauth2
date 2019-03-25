@@ -10,7 +10,7 @@ package test
 
 import (
     "fmt"
-    "oauth2/oauth2"
+    "github.com/xfali/oauth2/oauth2"
     "testing"
 )
 

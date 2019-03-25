@@ -11,7 +11,7 @@ package test
 import (
     "testing"
     "time"
-    "oauth2/buildin"
+    "github.com/xfali/oauth2/buildin"
 )
 
 

@@ -8,7 +8,7 @@
 
 package buildin
 
-import "oauth2/defines"
+import "github.com/xfali/oauth2/defines"
 
 func DefaultEventListener(clientId string, eventType int) *defines.ErrCode {
     return nil

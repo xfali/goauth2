@@ -10,7 +10,7 @@ package buildin
 
 import (
 	"github.com/xfali/goid"
-	"oauth2/defines"
+	"github.com/xfali/oauth2/defines"
 	"errors"
 	"sync"
 )

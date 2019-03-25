@@ -10,7 +10,7 @@ package oauth2
 
 import (
     "encoding/base64"
-    "oauth2/defines"
+    "github.com/xfali/oauth2/defines"
     "strings"
 )
 

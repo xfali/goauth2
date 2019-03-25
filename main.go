@@ -8,7 +8,7 @@
 
 package main
 
-import "oauth2/oauth2"
+import "github.com/xfali/oauth2/oauth2"
 
 func main(){
     oauth2.Run(":8080")
