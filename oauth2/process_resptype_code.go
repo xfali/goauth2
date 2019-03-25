@@ -10,10 +10,10 @@ package oauth2
 
 import (
     "github.com/emicklei/go-restful"
-    "github.com/xfali/goid"
     "net/http"
     "github.com/xfali/oauth2/defines"
     "github.com/xfali/oauth2/util"
+    "github.com/xfali/goutils/idUtil"
 )
 
 func ProcessRespTypeCode(auth *OAuth2, request *restful.Request, response *restful.Response) {
@@ -38,11 +38,21 @@ func ProcessRespTypeCode(auth *OAuth2, request *restful.Request, response *restf
         return
     }
 
-    //scope := request.QueryParameter("scope")
+    scope := request.QueryParameter("scope")
+    if scope == "" {
+        //response.WriteErrorString(defines.SCOPE_MISSING.HttpStatus, defines.SCOPE_MISSING.Error())
+        //return
+    } else {
+        if !auth.ClientManager.CheckScope(client_id, scope) {
+            response.WriteErrorString(defines.SCOPE_ERROR.HttpStatus, defines.SCOPE_ERROR.Error())
+            return
+        }
+    }
+
     state := request.QueryParameter("state")
 
-    code := goid.RandomId(30)
-    err := saveCode(auth.DataManager, client_id, code)
+    code := idUtil.RandomId(30)
+    err := auth.DataManager.SaveCode(client_id, code, scope, CODE_EXPIRE_TIME)
     if err != nil {
         response.WriteErrorString(defines.SAVE_DATA_ERROR.HttpStatus, defines.SAVE_DATA_ERROR.Error())
         return

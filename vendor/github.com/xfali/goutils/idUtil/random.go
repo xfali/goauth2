@@ -8,7 +8,7 @@
  * Description: 
  */
 
-package goid
+package idUtil
 
 import (
     "crypto/rand"

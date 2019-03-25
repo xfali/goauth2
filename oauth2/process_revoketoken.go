@@ -59,7 +59,7 @@ func ProcessRevokeToken(auth *OAuth2, request *restful.Request, response *restfu
         return
     }
 
-    revokeToken(auth.DataManager, client_id)
+    auth.DataManager.RevokeToken(client_id)
 
     response.WriteHeader(http.StatusOK)
 }

@@ -24,8 +24,8 @@ func ProcessAccessToken(auth *OAuth2, request *restful.Request, response *restfu
 
     access_token, _ := parseBearerInfo(authorization)
 
-    client_id, err := getAccessToken(auth.DataManager, access_token)
-    if err != nil {
+    client_id, err := auth.DataManager.GetAccessToken(access_token)
+    if err != nil || client_id == "" {
         response.WriteErrorString(defines.AUTHENTICATE_ACCESSTOKEN_ERROR.HttpStatus, defines.AUTHENTICATE_ACCESSTOKEN_ERROR.Error())
         return
     }

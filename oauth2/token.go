@@ -7,9 +7,14 @@ import (
 )
 
 func generateToken(client_id, client_secret string, expire_time time.Duration) (string, error) {
+    now := time.Now()
     token := jwt.NewWithClaims(
         jwt.SigningMethodHS256,
-        jwt.MapClaims{"client_id": client_id, "exp": time.Now().Add(expire_time).Unix()})
+        jwt.MapClaims{
+            "client_id": client_id,
+            "iat": now.Unix(),
+            "exp": now.Add(expire_time).Unix(),
+        })
     return token.SignedString([]byte(client_secret))
 }
 

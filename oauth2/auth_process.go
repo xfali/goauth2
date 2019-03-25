@@ -14,79 +14,23 @@ import (
     "strings"
 )
 
-const (
-    authorization_code_prefix   = "authorization_code:"
-    access_token_prefix         = "access_token:"
-    refresh_token_prefix        = "refresh_token:"
-    client_access_token_prefix  = "client_access_token:"
-    client_refresh_token_prefix = "client_refresh_token:"
-)
 
-func saveCode(dm defines.DataManager, client_id, code string) error {
-    return dm.Set(authorization_code_prefix+code, client_id, defines.AuthorizationCodeExpireTime)
-}
-
-func getCode(dm defines.DataManager, code string) (string, error) {
-    return dm.Get(code)
-}
-
-func delCode(dm defines.DataManager, code string) error {
-    return dm.Del(code)
-}
-
-func saveToken(dm defines.DataManager, client_id, access_token, refresh_token string) {
-    dm.Multi()
+func saveToken(dm defines.DataManager, access_data, access_token, refresh_data, refresh_token string) *defines.ErrCode {
     if refresh_token != "" {
-        old_refresh_token, err := dm.Get(client_refresh_token_prefix + client_id)
-        if err == nil {
-            ttl, _ := dm.TTL(old_refresh_token)
-            if ttl > defines.TokenKeepExpireTime {
-                dm.SetExpire(old_refresh_token, defines.TokenKeepExpireTime)
-            }
+        err := dm.SaveRefreshToken(refresh_data, refresh_token, defines.RefreshTokenExpireTime)
+        if err != nil {
+            return defines.SAVE_REFRESHTOKEN_ERROR
         }
-        refresh_token = refresh_token_prefix + refresh_token
-        dm.Set(refresh_token, client_id, defines.RefreshTokenExpireTime)
-        dm.Set(client_refresh_token_prefix+client_id, refresh_token, defines.RefreshTokenExpireTime)
     }
 
     if access_token != "" {
-        old_access_token, err := dm.Get(client_access_token_prefix + client_id)
-        if err == nil {
-            ttl, _ := dm.TTL(old_access_token)
-            if ttl > defines.TokenKeepExpireTime {
-                dm.SetExpire(old_access_token, defines.TokenKeepExpireTime)
-            }
+        err := dm.SaveAccessToken(access_data, access_token, defines.AccessTokenExpireTime)
+        if err != nil {
+            return defines.SAVE_ACCESSTOKEN_ERROR
         }
-        access_token = access_token_prefix + access_token
-        dm.Set(access_token, client_id, defines.AccessTokenExpireTime)
-        dm.Set(client_access_token_prefix+client_id, access_token, defines.AccessTokenExpireTime)
     }
-    dm.Exec()
-}
 
-func getRefreshToken(dm defines.DataManager, refresh_token string) (string, error) {
-    return dm.Get(refresh_token_prefix + refresh_token)
-}
-
-func getAccessToken(dm defines.DataManager, access_token string) (string, error) {
-    return dm.Get(access_token_prefix + access_token)
-}
-
-func revokeToken(dm defines.DataManager, client_id string) {
-    //FIXME: old refresh token and access token is still valid
-
-    dm.Multi()
-    refresh_token, err := dm.Get(client_refresh_token_prefix + client_id)
-    if err == nil {
-        dm.Del(refresh_token)
-        dm.Del(client_refresh_token_prefix + client_id)
-    }
-    access_token, err := dm.Get(client_access_token_prefix + client_id)
-    if err == nil {
-        dm.Del(access_token)
-        dm.Del(client_access_token_prefix + client_id)
-    }
-    dm.Exec()
+    return nil
 }
 
 func parseBasicInfo(authorization string) (string, string, *defines.ErrCode) {

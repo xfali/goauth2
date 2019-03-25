@@ -51,7 +51,11 @@ func ProcessRespTypeToken(auth *OAuth2, request *restful.Request, response *rest
         return
     }
 
-    saveToken(auth.DataManager, client_id, accessToken, "")
+    saveErr := saveToken(auth.DataManager, client_id, accessToken, "", "")
+    if saveErr != nil {
+        response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
+        return
+    }
 
     param := map[string]string{}
     param["state"] = state

@@ -36,7 +36,7 @@ func ProcessGrantTypeCode(auth *OAuth2, request *restful.Request, response *rest
         return
     }
 
-    id, err := getCode(auth.DataManager, code)
+    id, scope, err := auth.DataManager.GetCode(code)
     if err != nil {
         response.WriteErrorString(defines.CODE_IS_INVALID.HttpStatus, defines.CODE_IS_INVALID.Error())
         return
@@ -84,10 +84,14 @@ func ProcessGrantTypeCode(auth *OAuth2, request *restful.Request, response *rest
         RefreshToken: refreshToken,
         TokenType:    "bearer",
         ExpiresIn:    int(defines.AccessTokenExpireTime / time.Second),
-        Scope:        "",
+        Scope:        scope,
     }
 
-    saveToken(auth.DataManager, client_id, token.AccessToken, token.RefreshToken)
+    saveErr := saveToken(auth.DataManager, client_id, token.AccessToken, client_id, token.RefreshToken)
+    if saveErr != nil {
+        response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
+        return
+    }
 
     tokenByte, err := json.Marshal(token)
     if err != nil {
@@ -98,5 +102,5 @@ func ProcessGrantTypeCode(auth *OAuth2, request *restful.Request, response *rest
     response.Write(tokenByte)
 
     //code只能用一次
-    delCode(auth.DataManager, code)
+    auth.DataManager.DelCode(code)
 }

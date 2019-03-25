@@ -9,7 +9,7 @@
 package buildin
 
 import (
-	"github.com/xfali/goid"
+	"github.com/xfali/goutils/idUtil"
 	"github.com/xfali/oauth2/defines"
 	"errors"
 	"sync"
@@ -18,18 +18,18 @@ import (
 type DefaultClientManager struct {
 	mutex sync.Mutex
 	db    map[string]string
-	sf    *goid.SnowFlake
+	sf    *idUtil.SnowFlake
 }
 
 func NewDefaultClientManager() *DefaultClientManager {
-	return &DefaultClientManager{db: map[string]string{}, sf: goid.NewSnowFlake()}
+	return &DefaultClientManager{db: map[string]string{}, sf: idUtil.NewSnowFlake()}
 }
 
 func (cm *DefaultClientManager) CreateClient() (defines.ClientInfo, error) {
 	id, _ := cm.sf.NextId()
 	ci := defines.ClientInfo{
 		ClientId:     id.Compress().String(),
-		ClientSecret: goid.RandomId(32),
+		ClientSecret: idUtil.RandomId(32),
 	}
 
 	cm.db[ci.ClientId] = ci.ClientSecret
@@ -56,7 +56,7 @@ func (cm *DefaultClientManager) UpdateClient(clientId string) (string, error) {
 		return "", errors.New("client id not found")
 	}
 
-	secret := goid.RandomId(32)
+	secret := idUtil.RandomId(32)
 
 	cm.db[clientId] = secret
 
@@ -72,4 +72,8 @@ func (cm *DefaultClientManager) DeleteClient(clientId string) error {
 	}
 	delete(cm.db, clientId)
 	return nil
+}
+
+func (cm *DefaultClientManager) CheckScope(client_id string, scope string) bool {
+	return true
 }

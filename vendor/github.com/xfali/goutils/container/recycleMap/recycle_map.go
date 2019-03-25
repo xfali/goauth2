@@ -6,7 +6,7 @@
  * Description: 
  */
 
-package util
+package recycleMap
 
 import (
     "time"
@@ -33,8 +33,6 @@ func New() *RecycleMap {
         Lock: &sync.Mutex{},
     }
 
-    ret.Init()
-
     return ret
 }
 
@@ -50,7 +48,8 @@ func (dm *RecycleMap) purge() {
     }
 }
 
-func (dm *RecycleMap) Init() {
+//初始化并开启回收线程，必须调用
+func (dm *RecycleMap) Run() {
     if dm.PurgeInterval <= 0 {
         dm.PurgeInterval = 0
     }
@@ -82,10 +81,12 @@ func (dm *RecycleMap) Init() {
     }()
 }
 
+//关闭
 func (dm *RecycleMap) Close() {
     close(dm.stop)
 }
 
+//设置一个值，含过期时间
 func (dm *RecycleMap) Set(key, value interface{}, expireIn time.Duration) {
     dm.Lock.Lock()
     defer dm.Lock.Unlock()
@@ -94,6 +95,7 @@ func (dm *RecycleMap) Set(key, value interface{}, expireIn time.Duration) {
     dm.db[key] = dataEntity{value: value, expireTime: time}
 }
 
+//根据key获取value
 func (dm *RecycleMap) Get(key interface{}) interface{} {
     dm.Lock.Lock()
     defer dm.Lock.Unlock()
@@ -106,12 +108,14 @@ func (dm *RecycleMap) Get(key interface{}) interface{} {
     }
 }
 
+//删除key
 func (dm *RecycleMap) Del(key interface{}) {
     dm.Lock.Lock()
     defer dm.Lock.Unlock()
     delete(dm.db, key)
 }
 
+//根据key设置key过期时间
 func (dm *RecycleMap) SetExpire(key interface{}, expireIn time.Duration) bool {
     dm.Lock.Lock()
     defer dm.Lock.Unlock()
@@ -125,7 +129,8 @@ func (dm *RecycleMap) SetExpire(key interface{}, expireIn time.Duration) bool {
     }
 }
 
-func (dm *RecycleMap) TTL(key string) time.Duration {
+//获得key过期时间
+func (dm *RecycleMap) TTL(key interface{}) time.Duration {
     dm.Lock.Lock()
     defer dm.Lock.Unlock()
 
@@ -137,11 +142,13 @@ func (dm *RecycleMap) TTL(key string) time.Duration {
     }
 }
 
+//开启事务
 func (dm *RecycleMap) Multi() error {
     dm.Lock.Lock()
     return nil
 }
 
+//执行事务
 func (dm *RecycleMap) Exec() error {
     dm.Lock.Unlock()
     return nil

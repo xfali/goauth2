@@ -6,7 +6,7 @@
  * Description: 
  */
 
-package goid
+package idUtil
 
 import (
     "errors"
@@ -42,7 +42,6 @@ const (
     sequenceMask = -1 ^ (-1 << sequenceBits)
 )
 
-
 /**
  * @author Xiongfa Li
  * 唯一ID生成器，从2017年12月5日开始，能够使用68年左右，最大占19位字符
@@ -61,10 +60,10 @@ type SnowFlake struct {
 }
 
 const (
-    KEY_TIMESTAMP = "timestamp"
-    KEY_WORKERID = "workerId"
+    KEY_TIMESTAMP    = "timestamp"
+    KEY_WORKERID     = "workerId"
     KEY_DATACENTERID = "datacenterId"
-    KEY_SEQUENCE = "sequence"
+    KEY_SEQUENCE     = "sequence"
 )
 
 type SFId int64
@@ -131,15 +130,15 @@ func (sf *SnowFlake) NextId() (SFId, error) {
 }
 
 func (sf *SnowFlake) tilNextMillis(lastTimestamp int64) int64 {
-    timestamp := time.Duration(lastTimestamp + 1) * 1e6
+    timestamp := time.Duration(lastTimestamp+1) * 1e6
     sleepTime := timestamp - time.Duration(time.Now().UnixNano())
     if sleepTime > 0 {
-       select {
-       case <- time.After(sleepTime):
+        select {
+        case <-time.After(sleepTime):
 
-       }
+        }
     }
-    return int64(time.Now().UnixNano()/1e6)
+    return int64(time.Now().UnixNano() / 1e6)
     //timestamp := sf.timeGen()
     //for timestamp <= lastTimestamp {
     //   timestamp = sf.timeGen()
@@ -187,23 +186,23 @@ func getDatacenterId(maxDatacenterId int64) int64 {
 }
 
 //获得int64类型的id
-func (id SFId)Int64() int64 {
+func (id SFId) Int64() int64 {
     return int64(id)
 }
 
 //获得指定长度的string类型的id，不足部分以0补全
-func (id SFId)LimitString(bit int) string {
+func (id SFId) LimitString(bit int) string {
     bitStr := "%0" + strconv.Itoa(bit) + "d"
     return fmt.Sprintf(bitStr, id)
 }
 
 //获得string类型id
-func (id SFId)String() string {
+func (id SFId) String() string {
     return strconv.FormatInt(int64(id), 10)
 }
 
 //获得string类型id
-func (id SFId)Parse() map[string]int64 {
+func (id SFId) Parse() map[string]int64 {
     ret := map[string]int64{}
     ret[KEY_TIMESTAMP] = int64(twepoch + (id >> timestampLeftShift))
     ret[KEY_SEQUENCE] = int64(id & sequenceMask)
@@ -213,26 +212,27 @@ func (id SFId)Parse() map[string]int64 {
 }
 
 //获得时间戳
-func (id SFId)Timestamp() time.Duration {
-    return time.Duration(twepoch + (id >> timestampLeftShift)) * time.Millisecond
+func (id SFId) Timestamp() time.Duration {
+    return time.Duration(twepoch+(id>>timestampLeftShift)) * time.Millisecond
 }
 
 //将id转换为压缩SFStrId（string）类型
-func (id SFId)Compress() SFStrId {
+func (id SFId) Compress() SFStrId {
     return SFStrId(Compress2StringUL(int64(id)))
 }
 
 //压缩SFStrId转换为string类型
-func (sid SFStrId)String() string {
+func (sid SFStrId) String() string {
     return string(sid)
 }
 
 //压缩SFStrId转换为SFId类型
-func (sid SFStrId)UnCompress() SFId {
+func (sid SFStrId) UnCompress() SFId {
     return SFId(Uncompress2LongUL(string(sid)))
 }
 
-func (id SFId)Time() time.Time {
+//获得时间
+func (id SFId) Time() time.Time {
     t := int64(id.Timestamp())
     return time.Unix(0, t)
 }

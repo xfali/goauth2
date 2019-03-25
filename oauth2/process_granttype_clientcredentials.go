@@ -82,7 +82,11 @@ func ProcessGrantTypeClientCredentials(auth *OAuth2, request *restful.Request, r
         Scope:        "",
     }
 
-    saveToken(auth.DataManager, client_id, token.AccessToken, token.RefreshToken)
+    saveErr := saveToken(auth.DataManager, client_id, token.AccessToken, client_id, token.RefreshToken)
+    if saveErr != nil {
+        response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
+        return
+    }
 
     tokenByte, err := json.Marshal(token)
     if err != nil {

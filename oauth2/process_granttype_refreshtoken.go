@@ -77,16 +77,17 @@ func ProcessGrantTypeRefreshToken(auth *OAuth2, request *restful.Request, respon
         return
     }
 
-    client_id_saved, err := getRefreshToken(auth.DataManager, refresh_token)
-    if err != nil {
+    token_data, err := auth.DataManager.GetRefreshToken(refresh_token)
+    if err != nil  || token_data == "" {
         response.WriteErrorString(defines.REFRESH_TOKEN_NOT_FOUND.HttpStatus, defines.REFRESH_TOKEN_NOT_FOUND.Error())
         return
     }
 
-    if client_id != client_id_saved {
-        response.WriteErrorString(defines.CHECK_CLIENT_ID_ERROR.HttpStatus, defines.CHECK_CLIENT_ID_ERROR.Error())
-        return
-    }
+    //FIXME 不需要比较缓存中的数据？
+    //if client_id != token_data {
+    //    response.WriteErrorString(defines.CHECK_CLIENT_ID_ERROR.HttpStatus, defines.CHECK_CLIENT_ID_ERROR.Error())
+    //    return
+    //}
 
     //与请求authorization code时使用的redirect_uri相同。某些资源（API）不需要此参数。
     //redirect_uri, err := request.BodyParameter("redirect_uri")
@@ -103,7 +104,11 @@ func ProcessGrantTypeRefreshToken(auth *OAuth2, request *restful.Request, respon
         Scope:       "",
     }
 
-    saveToken(auth.DataManager, client_id, token.AccessToken, token.RefreshToken)
+    saveErr := saveToken(auth.DataManager, client_id, token.AccessToken, client_id, token.RefreshToken)
+    if saveErr != nil {
+        response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
+        return
+    }
 
     tokenByte, err := json.Marshal(token)
     if err != nil {

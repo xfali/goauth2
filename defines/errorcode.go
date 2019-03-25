@@ -21,6 +21,8 @@ var CLIENT_SECRET_MISSING *ErrCode = NewErrCodeWithHttpStatus("1105", "client_se
 var CHECK_CLIENT_ID_ERROR *ErrCode = NewErrCodeWithHttpStatus("1106", "Check client_id error", http.StatusUnauthorized)
 var CLINET_SECRET_NOT_MATCH *ErrCode = NewErrCodeWithHttpStatus("1107", "client_secret is Not match", http.StatusUnauthorized)
 var REDIRECT_URI_MISSING *ErrCode = NewErrCodeWithHttpStatus("1108", "redirect_uri is missing", http.StatusUnauthorized)
+var SCOPE_MISSING *ErrCode = NewErrCodeWithHttpStatus("1109", "scope is missing", http.StatusUnauthorized)
+var SCOPE_ERROR *ErrCode = NewErrCodeWithHttpStatus("1110", "scope error", http.StatusUnauthorized)
 var PASSWORD_CREDENTIALS_HEAD_MISSING *ErrCode = NewErrCodeWithHttpStatus("1111", "Password Credentials Header: Authorization missing", http.StatusUnauthorized)
 var USERNAME_MISSING *ErrCode = NewErrCodeWithHttpStatus("1112", "username is missing", http.StatusUnauthorized)
 var PASSWORD_MISSING *ErrCode = NewErrCodeWithHttpStatus("1113", "password is missing", http.StatusUnauthorized)
@@ -31,6 +33,8 @@ var REFRESH_TOKEN_NOT_FOUND *ErrCode = NewErrCodeWithHttpStatus("1117", "refresh
 var ACCESSTOKEN_MISSING *ErrCode = NewErrCodeWithHttpStatus("2000", "Access token: Authorization missing", http.StatusUnauthorized)
 var GENERATE_ACCESSTOKEN_ERROR *ErrCode = NewErrCodeWithHttpStatus("2001", "generate access token error", http.StatusInternalServerError)
 var GENERATE_REFRESHTOKEN_ERROR *ErrCode = NewErrCodeWithHttpStatus("2002", "generate refresh token error", http.StatusInternalServerError)
+var SAVE_ACCESSTOKEN_ERROR *ErrCode = NewErrCodeWithHttpStatus("2001", "save access token error", http.StatusInternalServerError)
+var SAVE_REFRESHTOKEN_ERROR *ErrCode = NewErrCodeWithHttpStatus("2002", "save refresh token error", http.StatusInternalServerError)
 var AUTHENTICATE_ACCESSTOKEN_ERROR *ErrCode = NewErrCodeWithHttpStatus("2010", "authenticate access token error", http.StatusUnauthorized)
 var TOKEN_ERROR *ErrCode = NewErrCodeWithHttpStatus("2003", "解析Token发生错误", http.StatusUnauthorized)
 

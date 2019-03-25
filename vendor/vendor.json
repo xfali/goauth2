@@ -47,12 +47,12 @@
 			"revisionTime": "2018-07-18T01:23:57Z"
 		},
 		{
-			"checksumSHA1": "Q7s7+DH7pzgbUoPhqBs4BQNS9CQ=",
-			"path": "github.com/xfali/goid",
-			"revision": "7650c15f1eccd085a578b154478e58ecccf350d1",
-			"revisionTime": "2019-03-01T09:37:04Z",
+			"checksumSHA1": "PQFiImcSeqeOQRY6uKF52kgbAiY=",
+			"path": "github.com/xfali/goutils",
+			"revision": "15c11c86fa2129c7a57ff00d0cf6237c3b332688",
+			"revisionTime": "2019-03-25T14:32:35Z",
 			"tree": true
 		}
 	],
-	"rootPath": "oauth2"
+	"rootPath": "github.com/xfali/oauth2"
 }

@@ -54,11 +54,13 @@ type ClientManager interface {
     //创建client，返回client_id及client_secret
     CreateClient() (ClientInfo, error)
     //根据client_id查询client_secret
-    QuerySecret(string) (string, error)
+    QuerySecret(client_id string) (string, error)
     //根据client_id刷新client_secret
-    UpdateClient(string) (string, error)
+    UpdateClient(client_id string) (string, error)
     //删除client_id及client_secret
-    DeleteClient(string) error
+    DeleteClient(client_id string) error
+    //查询client_id是否可授权scope，可授权返回true
+    CheckScope(client_id string, scope string) bool
 }
 
 type UserManager interface {
@@ -69,22 +71,33 @@ type UserManager interface {
 type DataManager interface {
     //初始化
     Init()
+
     //关闭
     Close()
-    //设置一个值，含过期时间
-    Set(key, value string, duration time.Duration) error
-    //根据key获取value
-    Get(key string) (string, error)
-    //删除key
-    Del(key string) error
-    //根据key设置key过期时间
-    SetExpire(key string, expireIn time.Duration) error
-    //获得key过期时间
-    TTL(key string) (time.Duration, error)
-    //开启事务
-    Multi() error
-    //执行事务
-    Exec() error
+
+    //保存Code相关信息，绑定client_id以及scope，在expireIn时间之后自动失效
+    SaveCode(code, client_id, scope string, expireIn time.Duration) error
+
+    //通过code获得client_id以及scope
+    GetCode(code string) (string, string, error)
+
+    //删除code
+    DelCode(code string) error
+
+    //保存refresh token
+    SaveRefreshToken(token_data string, refresh_token string, refresh_expire time.Duration) error
+
+    //保存refresh token以及access_token
+    SaveAccessToken(token_data string, access_token string, access_expire time.Duration) error
+
+    //通过refresh token获取保存的token data
+    GetRefreshToken(refresh_token string) (string, error)
+
+    //通过access token获取保存的token data
+    GetAccessToken(access_token string) (string, error)
+
+    //废弃client_id绑定的token，包括refresh token及access token
+    RevokeToken(client_id string)
 }
 
 type EventListener func(clientId string, eventType int) *ErrCode

@@ -11,7 +11,6 @@ package oauth2
 import (
     "encoding/json"
     "github.com/emicklei/go-restful"
-    "github.com/xfali/goid"
     "io"
     "log"
     "net/http"
@@ -20,6 +19,7 @@ import (
     "github.com/xfali/oauth2/util"
     "runtime"
     "time"
+    "github.com/xfali/goutils/idUtil"
 )
 
 const (
@@ -231,7 +231,7 @@ func (auth *OAuth2) wrapRouteFunction(function restful.RouteFunction) restful.Ro
 
         id := ""
         if auth.LogHttpInfo {
-            id = goid.RandomId(32)
+            id = idUtil.RandomId(32)
             util.LogRequest(id, auth.logf, request)
         }
 
