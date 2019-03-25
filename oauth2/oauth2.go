@@ -25,13 +25,13 @@ import (
 const (
     RESPONSE_TYPE_CODE      = "code"
     RESPONSE_TYPE_TOKEN     = "token"
+
     GRANT_TYPE_CODE         = "authorization_code"
     GRANT_TYPE_IMPLICIT     = "implicit"
     GRANT_TYPE_PASSWORD     = "password"
     GRANT_TYPE_CLIENTCERD   = "client_credentials"
     GRANT_TYPE_DEVICECODE   = "device code"
     GRANT_TYPE_REFRESHTOKEN = "refresh_token"
-    CODE_EXPIRE_TIME        = 10 * time.Minute
 )
 
 type ResponseTypeFunc func(auth *OAuth2, request *restful.Request, response *restful.Response)
@@ -56,7 +56,7 @@ func New() *OAuth2 {
         ClientManager:   buildin.NewDefaultClientManager(),
         DataManager:     buildin.NewDefaultDataManager(0),
         EventListener:   buildin.DefaultEventListener,
-        CodeExpireTime:  CODE_EXPIRE_TIME,
+        CodeExpireTime:  defines.AuthorizationCodeExpireTime,
         LogHttpInfo:     true,
         processRespMap:  map[string]ResponseTypeFunc{},
         processGrantMap: map[string]GrantTypeFunc{},

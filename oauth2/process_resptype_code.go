@@ -52,7 +52,7 @@ func ProcessRespTypeCode(auth *OAuth2, request *restful.Request, response *restf
     state := request.QueryParameter("state")
 
     code := idUtil.RandomId(30)
-    err := auth.DataManager.SaveCode(client_id, code, scope, CODE_EXPIRE_TIME)
+    err := auth.DataManager.SaveCode(client_id, code, scope, auth.CodeExpireTime)
     if err != nil {
         response.WriteErrorString(defines.SAVE_DATA_ERROR.HttpStatus, defines.SAVE_DATA_ERROR.Error())
         return
