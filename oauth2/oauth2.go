@@ -118,6 +118,13 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         Doc("方法描述：验证").
         Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")))
 
+    ws.Route(ws.DELETE("/token").
+        To(auth.wrapRouteFunction(auth.revoke)).
+        Doc("方法描述：验证").
+        Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
+        Param(ws.BodyParameter("client_id", "客户端ID").DataType("string")).
+        Param(ws.BodyParameter("client_secret", "客户端密码").DataType("string")))
+
     //for test
     ws.Route(ws.POST("/client").
         To(auth.wrapRouteFunction(auth.createClient)).
@@ -174,6 +181,10 @@ func (auth *OAuth2) token(request *restful.Request, response *restful.Response) 
 
 func (auth *OAuth2) authenticate(request *restful.Request, response *restful.Response) {
     ProcessAccessToken(auth, request, response)
+}
+
+func (auth *OAuth2) revoke(request *restful.Request, response *restful.Response) {
+    ProcessRevokeToken(auth, request, response)
 }
 
 func (auth *OAuth2) createClient(request *restful.Request, response *restful.Response) {

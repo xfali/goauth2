@@ -22,18 +22,19 @@ func ProcessRespTypeCode(auth *OAuth2, request *restful.Request, response *restf
 
     client_id := request.QueryParameter("client_id")
     if client_id == "" {
-        response.WriteErrorString(http.StatusBadRequest, defines.CLINET_ID_MISSING.Error())
+        response.WriteErrorString(defines.CLINET_ID_MISSING.HttpStatus, defines.CLINET_ID_MISSING.Error())
         return
     }
 
     errCode := auth.EventListener(client_id, defines.AuthorizationCodeEvent)
     if errCode != nil {
         response.WriteError(errCode.HttpStatus, errCode)
+        return
     }
 
     redirect_uri := request.QueryParameter("redirect_uri")
     if redirect_uri == "" {
-        response.WriteErrorString(http.StatusBadRequest, defines.REDIRECT_URI_MISSING.Error())
+        response.WriteErrorString(defines.REDIRECT_URI_MISSING.HttpStatus, defines.REDIRECT_URI_MISSING.Error())
         return
     }
 
@@ -43,7 +44,7 @@ func ProcessRespTypeCode(auth *OAuth2, request *restful.Request, response *restf
     code := goid.RandomId(30)
     err := saveCode(auth.DataManager, client_id, code)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.SAVE_DATA_ERROR.Error())
+        response.WriteErrorString(defines.SAVE_DATA_ERROR.HttpStatus, defines.SAVE_DATA_ERROR.Error())
         return
     }
 

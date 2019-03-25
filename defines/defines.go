@@ -21,8 +21,13 @@ const (
     PasswordTokenEvent
     //使用client_id、client_secret换取Token事件
     ClientCredentialsTokenEvent
+    //使用refresh token换取access token
     RequestRefreshTokenEvent
     RequestAccessTokenEvent
+    //验证token
+    AuthenticateToken
+    //废弃token
+    RevokeToken
 )
 
 const (

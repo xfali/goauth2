@@ -11,7 +11,6 @@ package oauth2
 import (
     "encoding/json"
     "github.com/emicklei/go-restful"
-    "net/http"
     "github.com/xfali/oauth2/defines"
     "time"
 )
@@ -24,67 +23,68 @@ func ProcessGrantTypeRefreshToken(auth *OAuth2, request *restful.Request, respon
     if basic == "" {
         tmp, err := request.BodyParameter("client_id")
         if err != nil {
-            response.WriteErrorString(http.StatusBadRequest, defines.PASSWORD_CREDENTIALS_HEAD_MISSING.Error()+"and"+defines.CLINET_ID_MISSING.Error())
+            response.WriteErrorString(defines.PASSWORD_CREDENTIALS_HEAD_MISSING.HttpStatus, defines.PASSWORD_CREDENTIALS_HEAD_MISSING.Error()+"and"+defines.CLINET_ID_MISSING.Error())
             return
         }
         client_id = tmp
 
         tmp2, err := request.BodyParameter("client_secret")
         if err != nil {
-            response.WriteErrorString(http.StatusBadRequest, defines.CLIENT_SECRET_MISSING.Error())
+            response.WriteErrorString(defines.CLIENT_SECRET_MISSING.HttpStatus, defines.CLIENT_SECRET_MISSING.Error())
             return
         }
         client_secret = tmp2
     } else {
-        var err error = nil
+        var err *defines.ErrCode = nil
         client_id, client_secret, err = parseBasicInfo(basic)
         if err != nil {
-            response.WriteErrorString(http.StatusBadRequest, err.Error())
+            response.WriteErrorString(err.HttpStatus, err.Error())
         }
     }
 
     //check client_id and client_secret
     secret, err := auth.ClientManager.QuerySecret(client_id)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.CHECK_CLIENT_ID_ERROR.Error())
+        response.WriteErrorString(defines.CHECK_CLIENT_ID_ERROR.HttpStatus, defines.CHECK_CLIENT_ID_ERROR.Error())
         return
     }
 
     if client_secret != secret {
-        response.WriteErrorString(http.StatusUnauthorized, defines.CLINET_SECRET_NOT_MATCH.Error())
+        response.WriteErrorString(defines.CLINET_SECRET_NOT_MATCH.HttpStatus, defines.CLINET_SECRET_NOT_MATCH.Error())
         return
     }
 
     errCode := auth.EventListener(client_id, defines.RequestRefreshTokenEvent)
     if errCode != nil {
         response.WriteError(errCode.HttpStatus, errCode)
+        return
     }
 
     refresh_token, err := request.BodyParameter("refresh_token")
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.REFRESH_TOKEN_MISSING.Error())
+        response.WriteErrorString(defines.REFRESH_TOKEN_MISSING.HttpStatus, defines.REFRESH_TOKEN_MISSING.Error())
         return
     }
 
     jwt_client_id, err := parseToken(secret, refresh_token)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.TOKEN_ERROR.Error())
+        response.WriteErrorString(defines.TOKEN_ERROR.HttpStatus, defines.TOKEN_ERROR.Error())
         return
     }
 
     if client_id != jwt_client_id {
-        response.WriteErrorString(http.StatusBadRequest, defines.CHECK_CLIENT_ID_ERROR.Error())
+        response.WriteErrorString(defines.CHECK_CLIENT_ID_ERROR.HttpStatus, defines.CHECK_CLIENT_ID_ERROR.Error())
         return
     }
 
     client_id_saved, err := getRefreshToken(auth.DataManager, refresh_token)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.REFRESH_TOKEN_NOT_FOUND.Error())
+        response.WriteErrorString(defines.REFRESH_TOKEN_NOT_FOUND.HttpStatus, defines.REFRESH_TOKEN_NOT_FOUND.Error())
         return
     }
 
     if client_id != client_id_saved {
-        response.WriteErrorString(http.StatusBadRequest, defines.CHECK_CLIENT_ID_ERROR.Error())
+        response.WriteErrorString(defines.CHECK_CLIENT_ID_ERROR.HttpStatus, defines.CHECK_CLIENT_ID_ERROR.Error())
         return
     }
 
@@ -92,7 +92,7 @@ func ProcessGrantTypeRefreshToken(auth *OAuth2, request *restful.Request, respon
     //redirect_uri, err := request.BodyParameter("redirect_uri")
     accessToken, err := generateToken(client_id, client_secret, defines.AccessTokenExpireTime)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.GENERATE_ACCESSTOKEN_ERROR.Error())
+        response.WriteErrorString(defines.GENERATE_ACCESSTOKEN_ERROR.HttpStatus, defines.GENERATE_ACCESSTOKEN_ERROR.Error())
         return
     }
 
@@ -107,7 +107,7 @@ func ProcessGrantTypeRefreshToken(auth *OAuth2, request *restful.Request, respon
 
     tokenByte, err := json.Marshal(token)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.INTERNAL_ERROR.Error())
+        response.WriteErrorString(defines.INTERNAL_ERROR.HttpStatus, defines.INTERNAL_ERROR.Error())
         return
     }
 

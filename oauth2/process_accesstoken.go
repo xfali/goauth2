@@ -11,7 +11,6 @@ package oauth2
 import (
     "github.com/emicklei/go-restful"
     "io"
-    "net/http"
     "github.com/xfali/oauth2/defines"
 )
 
@@ -19,7 +18,7 @@ func ProcessAccessToken(auth *OAuth2, request *restful.Request, response *restfu
     authorization := request.HeaderParameter("Authorization")
 
     if authorization == "" {
-        response.WriteErrorString(http.StatusUnauthorized, defines.ACCESSTOKEN_MISSING.Error())
+        response.WriteErrorString(defines.ACCESSTOKEN_MISSING.HttpStatus, defines.ACCESSTOKEN_MISSING.Error())
         return
     }
 
@@ -27,7 +26,13 @@ func ProcessAccessToken(auth *OAuth2, request *restful.Request, response *restfu
 
     client_id, err := getAccessToken(auth.DataManager, access_token)
     if err != nil {
-        response.WriteErrorString(http.StatusUnauthorized, defines.AUTHENTICATE_ACCESSTOKEN_ERROR.Error())
+        response.WriteErrorString(defines.AUTHENTICATE_ACCESSTOKEN_ERROR.HttpStatus, defines.AUTHENTICATE_ACCESSTOKEN_ERROR.Error())
+        return
+    }
+
+    errCode := auth.EventListener(client_id, defines.AuthenticateToken)
+    if errCode != nil {
+        response.WriteError(errCode.HttpStatus, errCode)
         return
     }
 

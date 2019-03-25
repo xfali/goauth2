@@ -9,13 +9,12 @@
 package oauth2
 
 import (
-    "encoding/json"
     "github.com/emicklei/go-restful"
+    "net/http"
     "github.com/xfali/oauth2/defines"
-    "time"
 )
 
-func ProcessGrantTypeClientCredentials(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessRevokeToken(auth *OAuth2, request *restful.Request, response *restful.Response) {
     //应用程序包含它在重定向中给出的授权码
     basic := request.HeaderParameter("Authorization")
 
@@ -54,41 +53,13 @@ func ProcessGrantTypeClientCredentials(auth *OAuth2, request *restful.Request, r
         return
     }
 
-    errCode := auth.EventListener(client_id, defines.ClientCredentialsTokenEvent)
+    errCode := auth.EventListener(client_id, defines.RevokeToken)
     if errCode != nil {
         response.WriteError(errCode.HttpStatus, errCode)
         return
     }
 
-    //与请求authorization code时使用的redirect_uri相同。某些资源（API）不需要此参数。
-    //redirect_uri, err := request.BodyParameter("redirect_uri")
-    accessToken, err := generateToken(client_id, client_secret, defines.AccessTokenExpireTime)
-    if err != nil {
-        response.WriteErrorString(defines.GENERATE_ACCESSTOKEN_ERROR.HttpStatus, defines.GENERATE_ACCESSTOKEN_ERROR.Error())
-        return
-    }
+    revokeToken(auth.DataManager, client_id)
 
-    refreshToken, err := generateToken(client_id, client_secret, defines.RefreshTokenExpireTime)
-    if err != nil {
-        response.WriteErrorString(defines.GENERATE_REFRESHTOKEN_ERROR.HttpStatus, defines.GENERATE_REFRESHTOKEN_ERROR.Error())
-        return
-    }
-
-    token := defines.Token{
-        AccessToken:  accessToken,
-        RefreshToken: refreshToken,
-        TokenType:    "bearer",
-        ExpiresIn:    int(defines.AccessTokenExpireTime / time.Second),
-        Scope:        "",
-    }
-
-    saveToken(auth.DataManager, client_id, token.AccessToken, token.RefreshToken)
-
-    tokenByte, err := json.Marshal(token)
-    if err != nil {
-        response.WriteErrorString(defines.INTERNAL_ERROR.HttpStatus, defines.INTERNAL_ERROR.Error())
-        return
-    }
-
-    response.Write(tokenByte)
+    response.WriteHeader(http.StatusOK)
 }

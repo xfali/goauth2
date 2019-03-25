@@ -21,18 +21,19 @@ func ProcessRespTypeToken(auth *OAuth2, request *restful.Request, response *rest
 
     client_id := request.QueryParameter("client_id")
     if client_id == "" {
-        response.WriteErrorString(http.StatusBadRequest, defines.CLINET_ID_MISSING.Error())
+        response.WriteErrorString(defines.CLINET_ID_MISSING.HttpStatus, defines.CLINET_ID_MISSING.Error())
         return
     }
 
     errCode := auth.EventListener(client_id, defines.ImplicitEvent)
     if errCode != nil {
         response.WriteError(errCode.HttpStatus, errCode)
+        return
     }
 
     redirect_uri := request.QueryParameter("redirect_uri")
     if redirect_uri == "" {
-        response.WriteErrorString(http.StatusBadRequest, defines.REDIRECT_URI_MISSING.Error())
+        response.WriteErrorString(defines.REDIRECT_URI_MISSING.HttpStatus, defines.REDIRECT_URI_MISSING.Error())
         return
     }
     //scope := request.QueryParameter("scope")
@@ -40,13 +41,13 @@ func ProcessRespTypeToken(auth *OAuth2, request *restful.Request, response *rest
 
     secret, err := auth.ClientManager.QuerySecret(client_id)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.CHECK_CLIENT_ID_ERROR.Error())
+        response.WriteErrorString(defines.CHECK_CLIENT_ID_ERROR.HttpStatus, defines.CHECK_CLIENT_ID_ERROR.Error())
         return
     }
 
     accessToken, err := generateToken(client_id, secret, defines.AccessTokenExpireTime)
     if err != nil {
-        response.WriteErrorString(http.StatusBadRequest, defines.GENERATE_ACCESSTOKEN_ERROR.Error())
+        response.WriteErrorString(defines.GENERATE_ACCESSTOKEN_ERROR.HttpStatus, defines.GENERATE_ACCESSTOKEN_ERROR.Error())
         return
     }
 
