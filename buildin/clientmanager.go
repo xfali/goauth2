@@ -26,6 +26,9 @@ func NewDefaultClientManager() *DefaultClientManager {
 }
 
 func (cm *DefaultClientManager) CreateClient() (defines.ClientInfo, error) {
+	cm.mutex.Lock()
+	defer cm.mutex.Unlock()
+
 	id, _ := cm.sf.NextId()
 	ci := defines.ClientInfo{
 		ClientId:     id.Compress().String(),

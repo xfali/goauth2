@@ -17,6 +17,8 @@ import (
 func TestOauth2(t *testing.T) {
     auth := oauth2.New()
     ClientInfo, _ := auth.ClientManager.CreateClient()
-    fmt.Printf("client_id: %s\n client_secret: %s\n", ClientInfo.ClientId, ClientInfo.ClientSecret)
+    fmt.Printf("client_id: %s\nclient_secret: %s\n", ClientInfo.ClientId, ClientInfo.ClientSecret)
+    auth.UserManager.CreateUser("admin", "admin")
+    fmt.Printf("username: admin\npassword: admin\n")
     auth.Run(":8080")
 }

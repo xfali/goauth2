@@ -53,12 +53,16 @@ type Token struct {
 type ClientManager interface {
     //创建client，返回client_id及client_secret
     CreateClient() (ClientInfo, error)
+
     //根据client_id查询client_secret
     QuerySecret(client_id string) (string, error)
+
     //根据client_id刷新client_secret
     UpdateClient(client_id string) (string, error)
+
     //删除client_id及client_secret
     DeleteClient(client_id string) error
+
     //查询client_id是否可授权scope，可授权返回true
     CheckScope(client_id string, scope string) bool
 }
@@ -66,6 +70,9 @@ type ClientManager interface {
 type UserManager interface {
     //验证用户名和密码
     CheckUser(username, password string) error
+
+    //创建用户
+    CreateUser(username, password string) error
 }
 
 type DataManager interface {
