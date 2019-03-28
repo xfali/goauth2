@@ -19,6 +19,8 @@ import (
     "os"
     "strings"
     "testing"
+    "io"
+    "errors"
 )
 
 type test struct {
@@ -27,6 +29,8 @@ type test struct {
     cm       *buildin.DefaultClientManager
     clientId string
 }
+
+//http://localhost:8080/oauth2/authorize?response_type=code&redirect_uri=http://localhost:8080/test/redirect&scope=test&state=123&client_id=CoBz7Z15ai
 
 func TestOauth2(t *testing.T) {
     auth := oauth2.New()
@@ -48,7 +52,7 @@ func TestOauth2(t *testing.T) {
     container := restful.NewContainer()
     test.initTestContainer(container)
 
-    auth.RunWithContainer(container, "localhost", "8080")
+    auth.RunWithContainer(container, "http://localhost", "8080")
 }
 
 func (t *test) initTestContainer(container *restful.Container) {
@@ -79,52 +83,10 @@ func (t *test) initTestContainer(container *restful.Container) {
 func (t *test) testRedirect(request *restful.Request, response *restful.Response) {
     code := request.QueryParameter("code")
     log.Printf("code is %s\n", code)
-}
+    io.WriteString(response.ResponseWriter, code)
 
-func (t *test) testLoginHtml(request *restful.Request, response *restful.Response) {
-    b, err := ioutil.ReadFile(getResourcePath("login.html"))
-    if err != nil {
-        response.WriteError(http.StatusBadRequest, err)
-    }
-
-    response.Write(b)
-}
-
-func (t *test) testAuthorizeHtml(request *restful.Request, response *restful.Response) {
-    b, err := ioutil.ReadFile(getResourcePath("authorize.html"))
-    if err != nil {
-        response.WriteError(http.StatusBadRequest, err)
-    }
-
-    response.Write(b)
-}
-
-func (t *test) testLogin(request *restful.Request, response *restful.Response) {
-    username, _ := request.BodyParameter("username")
-    password, _ := request.BodyParameter("password")
-    log.Printf("usernam is %s password %s\n", username, password)
-
-    err := t.um.CheckUser(username, password)
-    if err == nil {
-        c := http.Cookie{
-            Name:     "JSESSIONID",
-            Value:    "12345",
-            HttpOnly: true,
-        }
-        // 把cookie写入客户端
-        http.SetCookie(response.ResponseWriter, &c)
-        //http.Redirect(response.ResponseWriter, request.Request, "/test/authorize", http.StatusFound)
-    }
-
-    response.WriteError(http.StatusUnauthorized, err)
-}
-
-
-func (t *test) backend(request *restful.Request, response *restful.Response) {
-    request.Request.Cookie("login")
+    /*
     client := &http.Client{}
-
-    url := "http://localhost:8080/oauth2/authorize?response_type=code&redirect_uri=http://localhost:8080/test/redirect&scope=test&state=123&client_id=" + t.clientId
     req, err := http.NewRequest("GET", url, strings.NewReader("name=cjb"))
     if err != nil {
         // handle error
@@ -140,6 +102,64 @@ func (t *test) backend(request *restful.Request, response *restful.Response) {
     }
 
     response.Write(body)
+    */
+}
+
+func (t *test) testLoginHtml(request *restful.Request, response *restful.Response) {
+    b, err := ioutil.ReadFile(getResourcePath("login.html"))
+    if err != nil {
+        response.WriteError(http.StatusBadRequest, err)
+    }
+    htmlStr := string(b)
+    param := "/test/login?" + request.Request.URL.RawQuery
+    htmlStr = strings.Replace(htmlStr, "LOGIN_API_PATH", param, 1)
+
+    io.WriteString(response.ResponseWriter, htmlStr)
+}
+
+func (t *test) testAuthorizeHtml(request *restful.Request, response *restful.Response) {
+    b, err := ioutil.ReadFile(getResourcePath("authorize.html"))
+    if err != nil {
+        response.WriteError(http.StatusBadRequest, err)
+    }
+    htmlStr := string(b)
+    param := "/test/backend?" + request.Request.URL.RawQuery
+    htmlStr = strings.Replace(htmlStr, "AUTHORIZE_API_PATH", param, 1)
+
+    io.WriteString(response.ResponseWriter, htmlStr)
+}
+
+func (t *test) testLogin(request *restful.Request, response *restful.Response) {
+    username, _ := request.BodyParameter("username")
+    password, _ := request.BodyParameter("password")
+    log.Printf("usernam is %s password %s\n", username, password)
+
+    err := t.um.CheckUser(username, password)
+    if err == nil {
+        c := http.Cookie{
+            Name:     "JSESSIONID",
+            Value:    "12345",
+            HttpOnly: true,
+            Path:     "/",
+        }
+        // 把cookie写入客户端
+        http.SetCookie(response.ResponseWriter, &c)
+
+        query := request.Request.URL.RawQuery
+        callback := request.QueryParameter("callback")
+        callback = callback + "?" + query
+
+        http.Redirect(response.ResponseWriter, request.Request, callback, http.StatusFound)
+        return
+    }
+
+    response.WriteError(http.StatusUnauthorized, errors.New("nnn"))
+}
+
+func (t *test) backend(request *restful.Request, response *restful.Response) {
+    params := request.Request.URL.RawQuery
+    url := request.QueryParameter("callback") + "?" + params
+    http.Redirect(response.ResponseWriter, request.Request, url, http.StatusFound)
 }
 
 func getResourcePath(file string) string {
