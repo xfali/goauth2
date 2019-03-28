@@ -11,5 +11,5 @@ package main
 import "github.com/xfali/oauth2/oauth2"
 
 func main(){
-    oauth2.Run(":8080")
+    oauth2.Run("localhost","8080")
 }

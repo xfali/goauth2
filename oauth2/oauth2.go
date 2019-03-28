@@ -9,22 +9,21 @@
 package oauth2
 
 import (
-    "encoding/json"
     "github.com/emicklei/go-restful"
-    "io"
-    "log"
-    "net/http"
+    "github.com/xfali/goutils/idUtil"
     "github.com/xfali/oauth2/buildin"
     "github.com/xfali/oauth2/defines"
     "github.com/xfali/oauth2/util"
+    "io"
+    "log"
+    "net/http"
     "runtime"
     "time"
-    "github.com/xfali/goutils/idUtil"
 )
 
 const (
-    RESPONSE_TYPE_CODE      = "code"
-    RESPONSE_TYPE_TOKEN     = "token"
+    RESPONSE_TYPE_CODE  = "code"
+    RESPONSE_TYPE_TOKEN = "token"
 
     GRANT_TYPE_CODE         = "authorization_code"
     GRANT_TYPE_IMPLICIT     = "implicit"
@@ -38,6 +37,7 @@ type ResponseTypeFunc func(auth *OAuth2, request *restful.Request, response *res
 type GrantTypeFunc func(auth *OAuth2, request *restful.Request, response *restful.Response)
 
 type OAuth2 struct {
+    Addr           string
     UserManager    defines.UserManager
     ClientManager  defines.ClientManager
     DataManager    defines.DataManager
@@ -46,25 +46,34 @@ type OAuth2 struct {
     ErrorLog       *log.Logger
     LogHttpInfo    bool
 
-    processRespMap  map[string]ResponseTypeFunc
-    processGrantMap map[string]GrantTypeFunc
+    processRespMap    map[string]ResponseTypeFunc
+    processRespWebMap map[string]ResponseTypeFunc
+    processGrantMap   map[string]GrantTypeFunc
 }
 
 func New() *OAuth2 {
+    return NewWithWebCode("", "")
+}
+
+func NewWithWebCode(loginUrl, authorizeUrl string) *OAuth2 {
     ret := &OAuth2{
-        UserManager:     buildin.NewDefaultUserManager(),
-        ClientManager:   buildin.NewDefaultClientManager(),
-        DataManager:     buildin.NewDefaultDataManager(0),
-        EventListener:   buildin.DefaultEventListener,
-        CodeExpireTime:  defines.AuthorizationCodeExpireTime,
-        LogHttpInfo:     true,
-        processRespMap:  map[string]ResponseTypeFunc{},
-        processGrantMap: map[string]GrantTypeFunc{},
+        UserManager:       buildin.NewDefaultUserManager(loginUrl, authorizeUrl),
+        ClientManager:     buildin.NewDefaultClientManager(),
+        DataManager:       buildin.NewDefaultDataManager(0),
+        EventListener:     buildin.DefaultEventListener,
+        CodeExpireTime:    defines.AuthorizationCodeExpireTime,
+        LogHttpInfo:       true,
+        processRespMap:    map[string]ResponseTypeFunc{},
+        processRespWebMap: map[string]ResponseTypeFunc{},
+        processGrantMap:   map[string]GrantTypeFunc{},
     }
 
     ret.RegisterRespProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeCode)
+    ret.RegisterRespWebProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeWebCode)
     //It is generally not recommended to use the implicit flow
     //ret.RegisterRespProcessor(RESPONSE_TYPE_TOKEN, ProcessRespTypeToken)
+    //ret.RegisterRespWebProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeWebCode)
+    ret.RegisterRespProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeCode)
     ret.RegisterGrantProcessor(GRANT_TYPE_CODE, ProcessGrantTypeCode)
     ret.RegisterGrantProcessor(GRANT_TYPE_PASSWORD, ProcessGrantTypePassword)
     ret.RegisterGrantProcessor(GRANT_TYPE_CLIENTCERD, ProcessGrantTypeClientCredentials)
@@ -81,6 +90,10 @@ func (auth *OAuth2) RegisterRespProcessor(resp_type string, function ResponseTyp
     auth.processRespMap[resp_type] = function
 }
 
+func (auth *OAuth2) RegisterRespWebProcessor(resp_type string, function ResponseTypeFunc) {
+    auth.processRespWebMap[resp_type] = function
+}
+
 func (auth *OAuth2) RegisterGrantProcessor(grant_type string, function GrantTypeFunc) {
     auth.processGrantMap[grant_type] = function
 }
@@ -94,6 +107,15 @@ func (auth *OAuth2) Handle(c *restful.Container) {
     //参数:分为路径上的参数,query层面的参数,Header中的参数
     ws.Route(ws.GET("/authorize").
         To(auth.wrapRouteFunction(auth.authorize)).
+        Doc("方法描述：验证").
+        Param(ws.QueryParameter("response_type", "应答类型").DataType("string")).
+        Param(ws.QueryParameter("client_id", "客户端ID").DataType("string")).
+        Param(ws.QueryParameter("redirect_uri", "重定向地址").DataType("string")).
+        Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
+        Param(ws.QueryParameter("state", "状态").DataType("string")))
+
+    ws.Route(ws.GET("/authorize/web").
+        To(auth.wrapRouteFunction(auth.authorizeWeb)).
         Doc("方法描述：验证").
         Param(ws.QueryParameter("response_type", "应答类型").DataType("string")).
         Param(ws.QueryParameter("client_id", "客户端ID").DataType("string")).
@@ -124,32 +146,29 @@ func (auth *OAuth2) Handle(c *restful.Container) {
         Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
         Param(ws.BodyParameter("client_id", "客户端ID").DataType("string")).
         Param(ws.BodyParameter("client_secret", "客户端密码").DataType("string")))
+    /*
+        //for test
+        ws.Route(ws.POST("/client").
+            To(auth.wrapRouteFunction(auth.createClient)).
+            Doc("方法描述：增加client"))
+        ws.Route(ws.PUT("/client").
+            To(auth.wrapRouteFunction(auth.updateClient)).
+            Doc("方法描述：更新密钥").
+            Param(ws.BodyParameter("client_id", "client_id").DataType("string")))
+        ws.Route(ws.DELETE("/client").
+            To(auth.wrapRouteFunction(auth.deleteClient)).
+            Doc("方法描述：删除client").
+            Param(ws.PathParameter("client_id", "client_id").DataType("string")))
 
-    //for test
-    ws.Route(ws.POST("/client").
-        To(auth.wrapRouteFunction(auth.createClient)).
-        Doc("方法描述：增加client"))
-    ws.Route(ws.PUT("/client").
-        To(auth.wrapRouteFunction(auth.updateClient)).
-        Doc("方法描述：更新密钥").
-        Param(ws.BodyParameter("client_id", "client_id").DataType("string")))
-    ws.Route(ws.DELETE("/client").
-        To(auth.wrapRouteFunction(auth.deleteClient)).
-        Doc("方法描述：删除client").
-        Param(ws.PathParameter("client_id", "client_id").DataType("string")))
-
-    ws.Route(ws.GET("/test").
-        To(auth.wrapRouteFunction(test_redirect)).
-        Doc("方法描述：验证").
-        Param(ws.QueryParameter("code", "应答类型").DataType("string")).
-        Param(ws.QueryParameter("state", "状态").DataType("string")))
+        ws.Route(ws.GET("/test").
+            To(auth.wrapRouteFunction(auth.test_redirect)).
+            Doc("方法描述：验证").
+            Param(ws.QueryParameter("code", "应答类型").DataType("string")).
+            Param(ws.QueryParameter("state", "状态").DataType("string")))
+    */
+    //test end
 
     c.Add(ws)
-}
-
-func test_redirect(request *restful.Request, response *restful.Response) {
-    code := request.QueryParameter("code")
-    log.Printf("code is %s\n", code)
 }
 
 func (auth *OAuth2) authorize(request *restful.Request, response *restful.Response) {
@@ -161,7 +180,19 @@ func (auth *OAuth2) authorize(request *restful.Request, response *restful.Respon
         return
     }
 
-    io.WriteString(response.ResponseWriter, "ProcessorNotFound this would be a normal response")
+    io.WriteString(response.ResponseWriter, "response_type Not found this would be a normal response")
+}
+
+func (auth *OAuth2) authorizeWeb(request *restful.Request, response *restful.Response) {
+    response_type := request.QueryParameter("response_type")
+
+    function := auth.processRespWebMap[response_type]
+    if function != nil {
+        function(auth, request, response)
+        return
+    }
+
+    io.WriteString(response.ResponseWriter, "response_type(web) Not found this would be a normal response")
 }
 
 func (auth *OAuth2) token(request *restful.Request, response *restful.Response) {
@@ -176,7 +207,7 @@ func (auth *OAuth2) token(request *restful.Request, response *restful.Response) 
         return
     }
 
-    io.WriteString(response.ResponseWriter, "ProcessorNotFound this would be a normal response")
+    io.WriteString(response.ResponseWriter, "grant_type this would be a normal response")
 }
 
 func (auth *OAuth2) authenticate(request *restful.Request, response *restful.Response) {
@@ -187,6 +218,7 @@ func (auth *OAuth2) revoke(request *restful.Request, response *restful.Response)
     ProcessRevokeToken(auth, request, response)
 }
 
+/*
 func (auth *OAuth2) createClient(request *restful.Request, response *restful.Response) {
     clientInfo, err := auth.ClientManager.CreateClient()
     if err != nil {
@@ -216,6 +248,7 @@ func (auth *OAuth2) deleteClient(request *restful.Request, response *restful.Res
     }
     response.WriteHeader(http.StatusOK)
 }
+*/
 
 func (auth *OAuth2) wrapRouteFunction(function restful.RouteFunction) restful.RouteFunction {
     return func(request *restful.Request, response *restful.Response) {
@@ -251,9 +284,8 @@ func (auth *OAuth2) logf(format string, args ...interface{}) {
     }
 }
 
-func (auth *OAuth2) Run(addr string) {
-    wsContainer := restful.NewContainer()
-
+func (auth *OAuth2) RunWithContainer(wsContainer *restful.Container, host, port string) {
+    auth.Addr = host + ":" + port
     // 跨域过滤器
     cors := restful.CrossOriginResourceSharing{
         ExposeHeaders:  []string{"X-My-Header"},
@@ -281,11 +313,15 @@ func (auth *OAuth2) Run(addr string) {
     defer auth.Close()
 
     log.Println("start listening on localhost:8080")
-    server := &http.Server{Addr: addr, Handler: wsContainer}
+    server := &http.Server{Addr: ":" + port, Handler: wsContainer}
     defer server.Close()
     log.Fatal(server.ListenAndServe())
 }
 
-func Run(addr string) {
-    New().Run(addr)
+func (auth *OAuth2) Run(host, port string) {
+    auth.RunWithContainer(restful.NewContainer(), host, port)
+}
+
+func Run(host, port string) {
+    New().Run(host, port)
 }

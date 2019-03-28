@@ -77,6 +77,10 @@ func (cm *DefaultClientManager) DeleteClient(clientId string) error {
 	return nil
 }
 
-func (cm *DefaultClientManager) CheckScope(client_id string, scope string) bool {
+func (cm *DefaultClientManager) CheckScope(client_id string, respType string, scope string) bool {
 	return true
+}
+
+func (cm *DefaultClientManager) CheckDomainName(client_id string, domain_name string) error {
+	return nil
 }

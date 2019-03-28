@@ -6,15 +6,26 @@ import (
     "time"
 )
 
-func generateToken(client_id, client_secret string, expire_time time.Duration) (string, error) {
+func generateToken(client_id string, client_secret string, expire_time time.Duration) (string, error) {
+    param := map[string]string{
+        "client_id" : client_id,
+    }
+    return generateTokenWithParam(client_secret, expire_time, param)
+}
+
+func generateTokenWithParam(client_secret string, expire_time time.Duration, param map[string]string) (string, error) {
     now := time.Now()
+    claims := jwt.MapClaims{
+        "iat": now.Unix(),
+        "exp": now.Add(expire_time).Unix(),
+    }
+    for k, v := range param {
+        claims[k] = v
+    }
     token := jwt.NewWithClaims(
         jwt.SigningMethodHS256,
-        jwt.MapClaims{
-            "client_id": client_id,
-            "iat": now.Unix(),
-            "exp": now.Add(expire_time).Unix(),
-        })
+        claims)
+
     return token.SignedString([]byte(client_secret))
 }
 

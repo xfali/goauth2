@@ -8,17 +8,24 @@
 
 package buildin
 
-import "github.com/xfali/oauth2/defines"
+import (
+    "github.com/xfali/oauth2/defines"
+    "net/http"
+)
 
-type DefaultUserManager map[string]string
+type DefaultUserManager struct {
+    db           map[string]string
+    loginUrl     string
+    authorizeUrl string
+}
 
-func NewDefaultUserManager() *DefaultUserManager {
-    ret := &DefaultUserManager{}
+func NewDefaultUserManager(loginUrl, authorizeUrl string) *DefaultUserManager {
+    ret := &DefaultUserManager{db: map[string]string{}, loginUrl: loginUrl, authorizeUrl: authorizeUrl}
     return ret
 }
 
 func (um *DefaultUserManager) CheckUser(username, password string) error {
-    if (*um)[username] == password {
+    if um.db[username] == password {
         return nil
     } else {
         return defines.PASSWORD_NOT_MATCH
@@ -26,6 +33,15 @@ func (um *DefaultUserManager) CheckUser(username, password string) error {
 }
 
 func (um *DefaultUserManager) CreateUser(username, password string) error {
-    (*um)[username] = password
+    um.db[username] = password
     return nil
+}
+
+func (um *DefaultUserManager) UserAuthorize(r *http.Request) (string, error) {
+    _, err := r.Cookie("JSESSIONID")
+    if err != nil {
+        return um.loginUrl, nil
+    } else {
+        return um.authorizeUrl, nil
+    }
 }

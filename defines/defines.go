@@ -8,7 +8,10 @@
 
 package defines
 
-import "time"
+import (
+    "time"
+    "net/http"
+)
 
 const (
     //Authorization Code类型授权（网页授权）事件
@@ -52,27 +55,31 @@ type Token struct {
 
 type ClientManager interface {
     //创建client，返回client_id及client_secret
-    CreateClient() (ClientInfo, error)
+    //CreateClient() (ClientInfo, error)
 
     //根据client_id查询client_secret
     QuerySecret(client_id string) (string, error)
 
     //根据client_id刷新client_secret
-    UpdateClient(client_id string) (string, error)
+    //UpdateClient(client_id string) (string, error)
 
     //删除client_id及client_secret
-    DeleteClient(client_id string) error
+    //DeleteClient(client_id string) error
 
     //查询client_id是否可授权scope，可授权返回true
-    CheckScope(client_id string, scope string) bool
+    CheckScope(client_id string, respType string, scope string) bool
+
+    //检查域名
+    CheckDomainName(client_id string, domain_name string) error
 }
 
 type UserManager interface {
     //验证用户名和密码
     CheckUser(username, password string) error
 
-    //创建用户
-    CreateUser(username, password string) error
+    //当类型为网页授权时，调用该方法检测用户是否登录
+    //返回重定向授权页面的地址
+    UserAuthorize(r *http.Request) (string, error)
 }
 
 type DataManager interface {
