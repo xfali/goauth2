@@ -88,7 +88,7 @@ func ProcessGrantTypeClientCredentials(auth *OAuth2, request *restful.Request, r
         return
     }
 
-    tokenByte, err := json.Marshal(token)
+    tokenByte, err := json.Marshal(&token)
     if err != nil {
         response.WriteErrorString(defines.INTERNAL_ERROR.HttpStatus, defines.INTERNAL_ERROR.Error())
         return

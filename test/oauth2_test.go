@@ -24,10 +24,11 @@ import (
 )
 
 type test struct {
-    auth     *oauth2.OAuth2
-    um       *buildin.DefaultUserManager
-    cm       *buildin.DefaultClientManager
-    clientId string
+    auth         *oauth2.OAuth2
+    um           *buildin.DefaultUserManager
+    cm           *buildin.DefaultClientManager
+    clientId     string
+    clientSecret string
 }
 
 //http://localhost:8080/oauth2/authorize?response_type=code&redirect_uri=http://localhost:8080/test/redirect&scope=test&state=123&client_id=CoBz7Z15ai
@@ -42,6 +43,7 @@ func TestOauth2(t *testing.T) {
     auth.ClientManager = cm
     test.cm = cm
     test.clientId = ClientInfo.ClientId
+    test.clientSecret = ClientInfo.ClientSecret
 
     um := buildin.NewDefaultUserManager("/test/login", "/test/authorize")
     um.CreateUser("admin", "admin")
@@ -83,26 +85,41 @@ func (t *test) initTestContainer(container *restful.Container) {
 func (t *test) testRedirect(request *restful.Request, response *restful.Response) {
     code := request.QueryParameter("code")
     log.Printf("code is %s\n", code)
-    io.WriteString(response.ResponseWriter, code)
+    //io.WriteString(response.ResponseWriter, code)
 
-    /*
     client := &http.Client{}
-    req, err := http.NewRequest("GET", url, strings.NewReader("name=cjb"))
-    if err != nil {
-        // handle error
-    }
 
-    resp, err := client.Do(req)
+    var req http.Request
+    req.ParseForm()
+    req.Form.Add("grant_type", oauth2.GRANT_TYPE_CODE)
+    req.Form.Add("code", code)
+    req.Form.Add("client_id", t.clientId)
+    req.Form.Add("client_secret", t.clientSecret)
+    bodystr := strings.TrimSpace(req.Form.Encode())
+    req2, err := http.NewRequest("POST", t.auth.Addr+"/oauth2/token", strings.NewReader(bodystr))
+    if err != nil {
+        response.WriteError(http.StatusBadRequest, err)
+        return
+    }
+    req2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    req2.Header.Set("Connection", "Keep-Alive")
+
+    resp, err := client.Do(req2)
+    if err != nil {
+        response.WriteError(http.StatusBadRequest, err)
+        return
+    }
 
     defer resp.Body.Close()
 
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
-        // handle error
+        response.WriteError(http.StatusBadRequest, err)
+        return
     }
 
     response.Write(body)
-    */
+
 }
 
 func (t *test) testLoginHtml(request *restful.Request, response *restful.Response) {

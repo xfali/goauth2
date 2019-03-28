@@ -46,7 +46,7 @@ func (dm *DefaultDataManager) Close() {
     dm.recycleMap.Close()
 }
 
-func (dm *DefaultDataManager) SaveCode(code, client_id, scope string, expireIn time.Duration) error {
+func (dm *DefaultDataManager) SaveCode(client_id, code, scope string, expireIn time.Duration) error {
     data := client_id + ":" + scope
     dm.recycleMap.Set(authorization_code_prefix+code, data, expireIn)
     return nil
@@ -54,7 +54,7 @@ func (dm *DefaultDataManager) SaveCode(code, client_id, scope string, expireIn t
 
 //通过code获得client_id以及scope
 func (dm *DefaultDataManager) GetCode(code string) (string, string, error) {
-    data := dm.recycleMap.Get(code)
+    data := dm.recycleMap.Get(authorization_code_prefix+code)
     if data == nil {
         return "", "", defines.CODE_IS_INVALID
     } else {
@@ -69,7 +69,7 @@ func (dm *DefaultDataManager) GetCode(code string) (string, string, error) {
 
 //删除code
 func (dm *DefaultDataManager) DelCode(code string) error {
-    dm.DelCode(code)
+    dm.recycleMap.Del(authorization_code_prefix+code)
     return nil
 }
 
