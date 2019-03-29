@@ -9,10 +9,10 @@
 package buildin
 
 import (
-    "time"
+    "github.com/xfali/goutils/container/recycleMap"
     "github.com/xfali/oauth2/defines"
     "strings"
-    "github.com/xfali/goutils/container/recycleMap"
+    "time"
 )
 
 const (
@@ -29,7 +29,7 @@ type DefaultDataManager struct {
 
 func NewDefaultDataManager(PurgeInterval time.Duration) *DefaultDataManager {
     ret := &DefaultDataManager{
-        recycleMap : recycleMap.New(),
+        recycleMap: recycleMap.New(),
     }
 
     ret.recycleMap.PurgeInterval = PurgeInterval
@@ -54,7 +54,7 @@ func (dm *DefaultDataManager) SaveCode(client_id, code, scope string, expireIn t
 
 //通过code获得client_id以及scope
 func (dm *DefaultDataManager) GetCode(code string) (string, string, error) {
-    data := dm.recycleMap.Get(authorization_code_prefix+code)
+    data := dm.recycleMap.Get(authorization_code_prefix + code)
     if data == nil {
         return "", "", defines.CODE_IS_INVALID
     } else {
@@ -69,7 +69,7 @@ func (dm *DefaultDataManager) GetCode(code string) (string, string, error) {
 
 //删除code
 func (dm *DefaultDataManager) DelCode(code string) error {
-    dm.recycleMap.Del(authorization_code_prefix+code)
+    dm.recycleMap.Del(authorization_code_prefix + code)
     return nil
 }
 
@@ -97,16 +97,16 @@ func (dm *DefaultDataManager) SaveRefreshToken(token_data string, refresh_token 
 func (dm *DefaultDataManager) SaveAccessToken(token_data string, access_token string, access_expire time.Duration) error {
     if access_token != "" {
         dm.recycleMap.Multi()
-        old_refresh_token := dm.recycleMap.Get(client_refresh_token_prefix + token_data)
+        old_refresh_token := dm.recycleMap.Get(client_access_token_prefix + token_data)
         if old_refresh_token != nil {
             ttl := dm.recycleMap.TTL(old_refresh_token)
             if ttl > defines.TokenKeepExpireTime {
                 dm.recycleMap.SetExpire(old_refresh_token, defines.TokenKeepExpireTime)
             }
         }
-        access_token = refresh_token_prefix + access_token
+        access_token = access_token_prefix + access_token
         dm.recycleMap.Set(access_token, token_data, access_expire)
-        dm.recycleMap.Set(client_refresh_token_prefix+token_data, access_token, access_expire)
+        dm.recycleMap.Set(client_access_token_prefix+token_data, access_token, access_expire)
         return dm.recycleMap.Exec()
     }
 
@@ -148,4 +148,3 @@ func (dm *DefaultDataManager) RevokeToken(client_id string) {
     }
     dm.recycleMap.Exec()
 }
-
