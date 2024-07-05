@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024, Xiongfa Li.
+ * Copyright (C) 2024, Xiongfa Li.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package main
+package clients
 
-import "github.com/xfali/oauth2/v2/oauth2"
+type ClientManager interface {
+	// QuerySecret 根据client id查询client secret
+	QuerySecret(clientId string) (string, error)
 
-func main() {
-	oauth2.Run("localhost", "8080")
+	// CheckScope 查询client id是否可授权scope，可授权返回true
+	CheckScope(clientId string, respType string, scope string) bool
+
+	// CheckDomainName 检查域名
+	CheckDomainName(clientId string, domainName string) error
 }

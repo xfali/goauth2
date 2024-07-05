@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024, Xiongfa Li.
+ * Copyright (C) 2024, Xiongfa Li.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package main
+package users
 
-import "github.com/xfali/oauth2/v2/oauth2"
+import "net/http"
 
-func main() {
-	oauth2.Run("localhost", "8080")
+type UserManager interface {
+	//验证用户名和密码
+	CheckUser(username, password string) error
+
+	//当类型为网页授权时，调用该方法检测用户是否登录
+	//返回重定向授权页面的地址
+	UserAuthorize(r *http.Request) (string, error)
 }

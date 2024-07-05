@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package main
+package events
 
-import "github.com/xfali/oauth2/v2/oauth2"
+import "github.com/xfali/oauth2/v2/errcodes"
 
-func main() {
-	oauth2.Run("localhost", "8080")
+func DefaultEventListener(clientId string, eventType int) *errcodes.ErrCode {
+	return nil
 }

@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package main
+package entities
 
-import "github.com/xfali/oauth2/v2/oauth2"
+type ClientInfo struct {
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+}
 
-func main() {
-	oauth2.Run("localhost", "8080")
+type Token struct {
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	TokenType    string `json:"token_type,omitempty"`
+	ExpiresIn    int    `json:"expires_in,omitempty"`
+	Scope        string `json:"scope,omitempty"`
 }

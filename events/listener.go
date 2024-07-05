@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024, Xiongfa Li.
+ * Copyright (C) 2024, Xiongfa Li.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package main
+package events
 
-import "github.com/xfali/oauth2/v2/oauth2"
+import "github.com/xfali/oauth2/v2/errcodes"
 
-func main() {
-	oauth2.Run("localhost", "8080")
-}
+type EventListener func(clientId string, eventType int) *errcodes.ErrCode
