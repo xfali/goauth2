@@ -39,6 +39,8 @@ var SaveAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2001", "save acces
 var SaveRefreshTokenError *ErrCode = NewErrCodeWithHttpStatus("2002", "save refresh token error", http.StatusInternalServerError)
 var AuthenticateAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2010", "authenticate access token error", http.StatusUnauthorized)
 var TokenError *ErrCode = NewErrCodeWithHttpStatus("2003", "解析Token发生错误", http.StatusUnauthorized)
+var GrantTypeMissing *ErrCode = NewErrCodeWithHttpStatus("3001", "grant type missing", http.StatusBadRequest)
+var GrantTypeNotSupport *ErrCode = NewErrCodeWithHttpStatus("3001", "grant type not support", http.StatusBadRequest)
 
 type ErrCode struct {
 	Code       string `json:"code"`

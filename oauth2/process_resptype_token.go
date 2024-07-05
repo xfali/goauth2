@@ -23,7 +23,7 @@ import (
 	"net/http"
 )
 
-func ProcessRespTypeToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+func ProcessRespTypeToken(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
 	query := request.URL.Query()
@@ -78,7 +78,7 @@ func ProcessRespTypeToken(auth *OAuth2, request *http.Request, response http.Res
 	return nil
 }
 
-func ProcessRespTypeWebToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+func ProcessRespTypeWebToken(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
 

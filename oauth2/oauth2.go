@@ -18,20 +18,15 @@ package oauth2
 
 import (
 	"encoding/json"
-	"github.com/emicklei/go-restful"
-	"github.com/xfali/goutils/idUtil"
 	"github.com/xfali/oauth2/v2/clients"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/datas"
 	"github.com/xfali/oauth2/v2/errcodes"
 	"github.com/xfali/oauth2/v2/events"
 	"github.com/xfali/oauth2/v2/users"
-	"github.com/xfali/oauth2/v2/util"
 	"github.com/xfali/xlog"
 	"io"
-	"log"
 	"net/http"
-	"runtime"
 	"time"
 )
 
@@ -47,22 +42,22 @@ const (
 	GrantTypeRefreshToken      = "refresh_token"
 )
 
-type ResponseTypeFunc func(auth *OAuth2, request *http.Request, response http.ResponseWriter) error
-type GrantTypeFunc func(auth *OAuth2, request *http.Request, response http.ResponseWriter) error
+type ResponseTypeFunc func(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error
+type GrantTypeFunc func(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error
 type Writer interface {
 	Write(w http.ResponseWriter, o interface{}) error
 	WriteError(w http.ResponseWriter, code *errcodes.ErrCode) error
 }
 
-type OAuth2 struct {
-	Addr           string
+type OAuth2Context struct {
 	UserManager    users.UserManager
 	ClientManager  clients.ClientManager
 	DataManager    datas.DataManager
 	EventListener  events.EventListener
 	CodeExpireTime time.Duration
-	logger         xlog.Logger
-	LogHttpInfo    bool
+	CallbackUrl    string
+
+	logger xlog.Logger
 
 	respWriter Writer
 
@@ -71,19 +66,18 @@ type OAuth2 struct {
 	processGrantMap   map[string]GrantTypeFunc
 }
 
-func New() *OAuth2 {
+func New() *OAuth2Context {
 	return NewWithWebCode("", "")
 }
 
-func NewWithWebCode(loginUrl, authorizeUrl string) *OAuth2 {
-	ret := &OAuth2{
+func NewWithWebCode(loginUrl, authorizeUrl string) *OAuth2Context {
+	ret := &OAuth2Context{
 		logger:            xlog.GetLogger(),
 		UserManager:       users.NewDefaultUserManager(loginUrl, authorizeUrl),
 		ClientManager:     clients.NewDefaultClientManager(),
 		DataManager:       datas.NewDefaultDataManager(0),
 		EventListener:     events.DefaultEventListener,
 		CodeExpireTime:    constants.AuthorizationCodeExpireTime,
-		LogHttpInfo:       true,
 		respWriter:        &defaultWriter{},
 		processRespMap:    map[string]ResponseTypeFunc{},
 		processRespWebMap: map[string]ResponseTypeFunc{},
@@ -104,97 +98,25 @@ func NewWithWebCode(loginUrl, authorizeUrl string) *OAuth2 {
 	return ret
 }
 
-func (auth *OAuth2) Close() {
+func (auth *OAuth2Context) Close() {
 	auth.DataManager.Close()
 }
 
-func (auth *OAuth2) RegisterRespProcessor(resp_type string, function ResponseTypeFunc) {
+func (auth *OAuth2Context) RegisterRespProcessor(resp_type string, function ResponseTypeFunc) {
 	auth.processRespMap[resp_type] = function
 }
 
-func (auth *OAuth2) RegisterRespWebProcessor(resp_type string, function ResponseTypeFunc) {
+func (auth *OAuth2Context) RegisterRespWebProcessor(resp_type string, function ResponseTypeFunc) {
 	auth.processRespWebMap[resp_type] = function
 }
 
-func (auth *OAuth2) RegisterGrantProcessor(grant_type string, function GrantTypeFunc) {
+func (auth *OAuth2Context) RegisterGrantProcessor(grant_type string, function GrantTypeFunc) {
 	auth.processGrantMap[grant_type] = function
 }
 
-func (auth *OAuth2) Handle(c *restful.Container) {
-	ws := new(restful.WebService)
-	//设置匹配的schema和路径
-	ws.Path("/oauth2").Consumes("*/*").Produces("*/*")
-
-	//设置不同method对应的方法，参数以及参数描述和类型
-	//参数:分为路径上的参数,query层面的参数,Header中的参数
-	ws.Route(ws.GET("/authorize").
-		To(auth.wrapRouteFunction(auth.authorize)).
-		Doc("方法描述：验证").
-		Param(ws.QueryParameter("response_type", "应答类型").DataType("string")).
-		Param(ws.QueryParameter("client_id", "客户端ID").DataType("string")).
-		Param(ws.QueryParameter("redirect_uri", "重定向地址").DataType("string")).
-		Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
-		Param(ws.QueryParameter("state", "状态").DataType("string")))
-
-	ws.Route(ws.GET("/authorize/web").
-		To(auth.wrapRouteFunction(auth.authorizeWeb)).
-		Doc("方法描述：验证").
-		Param(ws.QueryParameter("response_type", "应答类型").DataType("string")).
-		Param(ws.QueryParameter("client_id", "客户端ID").DataType("string")).
-		Param(ws.QueryParameter("redirect_uri", "重定向地址").DataType("string")).
-		Param(ws.QueryParameter("scope", "授权范围").DataType("string")).
-		Param(ws.QueryParameter("state", "状态").DataType("string")))
-
-	ws.Route(ws.POST("/token").
-		To(auth.wrapRouteFunction(auth.token)).
-		Doc("方法描述：验证").
-		Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
-		Param(ws.BodyParameter("grant_type", "获取类型").DataType("string")).
-		Param(ws.BodyParameter("code", "授权码").DataType("string")).
-		Param(ws.BodyParameter("redirect_uri", "重定向地址").DataType("string")).
-		Param(ws.BodyParameter("client_id", "客户端ID").DataType("string")).
-		Param(ws.BodyParameter("client_secret", "客户端密码").DataType("string")).
-		Param(ws.BodyParameter("username", "用户名").DataType("string")).
-		Param(ws.BodyParameter("password", "用户密码").DataType("string")))
-
-	ws.Route(ws.GET("/authenticate").
-		To(auth.wrapRouteFunction(auth.authenticate)).
-		Doc("方法描述：验证").
-		Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")))
-
-	ws.Route(ws.DELETE("/token").
-		To(auth.wrapRouteFunction(auth.revoke)).
-		Doc("方法描述：验证").
-		Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
-		Param(ws.BodyParameter("client_id", "客户端ID").DataType("string")).
-		Param(ws.BodyParameter("client_secret", "客户端密码").DataType("string")))
-	/*
-	   //for test
-	   ws.Route(ws.POST("/client").
-	       To(auth.wrapRouteFunction(auth.createClient)).
-	       Doc("方法描述：增加client"))
-	   ws.Route(ws.PUT("/client").
-	       To(auth.wrapRouteFunction(auth.updateClient)).
-	       Doc("方法描述：更新密钥").
-	       Param(ws.BodyParameter("client_id", "client_id").DataType("string")))
-	   ws.Route(ws.DELETE("/client").
-	       To(auth.wrapRouteFunction(auth.deleteClient)).
-	       Doc("方法描述：删除client").
-	       Param(ws.PathParameter("client_id", "client_id").DataType("string")))
-
-	   ws.Route(ws.GET("/test").
-	       To(auth.wrapRouteFunction(auth.test_redirect)).
-	       Doc("方法描述：验证").
-	       Param(ws.QueryParameter("code", "应答类型").DataType("string")).
-	       Param(ws.QueryParameter("state", "状态").DataType("string")))
-	*/
-	//test end
-
-	c.Add(ws)
-}
-
-func (auth *OAuth2) authorize(request *restful.Request, response *restful.Response) {
-	response_type := request.QueryParameter("response_type")
+func (auth *OAuth2Context) Authorize(request *http.Request, response http.ResponseWriter) {
+	query := request.URL.Query()
+	response_type := query.Get("response_type")
 
 	function := auth.processRespMap[response_type]
 	if function != nil {
@@ -202,11 +124,13 @@ func (auth *OAuth2) authorize(request *restful.Request, response *restful.Respon
 		return
 	}
 
-	io.WriteString(response.ResponseWriter, "response_type Not found this would be a normal response")
+	auth.logger.Errorf("authorize response type %s not support\n", response_type)
+	_ = auth.respWriter.WriteError(response, errcodes.ResponseTypeNotSupport)
 }
 
-func (auth *OAuth2) authorizeWeb(request *restful.Request, response *restful.Response) {
-	response_type := request.QueryParameter("response_type")
+func (auth *OAuth2Context) AuthorizeWeb(request *http.Request, response http.ResponseWriter) {
+	query := request.URL.Query()
+	response_type := query.Get("response_type")
 
 	function := auth.processRespWebMap[response_type]
 	if function != nil {
@@ -214,34 +138,46 @@ func (auth *OAuth2) authorizeWeb(request *restful.Request, response *restful.Res
 		return
 	}
 
-	io.WriteString(response.ResponseWriter, "response_type(web) Not found this would be a normal response")
+	auth.logger.Errorf("authorizeWeb response type %s not support\n", response_type)
+	_ = auth.respWriter.WriteError(response, errcodes.ResponseTypeNotSupport)
 }
 
-func (auth *OAuth2) token(request *restful.Request, response *restful.Response) {
-	grant_type, err := request.BodyParameter("grant_type")
-	if err != nil {
-		response.WriteErrorString(http.StatusBadRequest, "grant_type is missing")
+func (auth *OAuth2Context) Token(request *http.Request, response http.ResponseWriter) {
+	grant_type := request.FormValue("grant_type")
+	if grant_type == "" {
+		_ = auth.respWriter.WriteError(response, errcodes.GrantTypeMissing)
+		return
 	}
 
 	function := auth.processGrantMap[grant_type]
 	if function != nil {
-		function(auth, request, response)
+		err := function(auth, request, response)
+		if err != nil {
+			auth.logger.Errorln("token error: ", err)
+		}
 		return
 	}
 
-	io.WriteString(response.ResponseWriter, "grant_type this would be a normal response")
+	auth.logger.Errorf("Token grant type %s not support\n", grant_type)
+	_ = auth.respWriter.WriteError(response, errcodes.GrantTypeNotSupport)
 }
 
-func (auth *OAuth2) authenticate(request *restful.Request, response *restful.Response) {
-	ProcessAccessToken(auth, request, response)
+func (auth *OAuth2Context) Authenticate(request *http.Request, response http.ResponseWriter) {
+	err := ProcessAccessToken(auth, request, response)
+	if err != nil {
+		auth.logger.Errorln("authenticate failed: ", err)
+	}
 }
 
-func (auth *OAuth2) revoke(request *restful.Request, response *restful.Response) {
-	ProcessRevokeToken(auth, request, response)
+func (auth *OAuth2Context) Revoke(request *http.Request, response http.ResponseWriter) {
+	err := ProcessRevokeToken(auth, request, response)
+	if err != nil {
+		auth.logger.Errorln("revoke failed: ", err)
+	}
 }
 
 /*
-func (auth *OAuth2) createClient(request *restful.Request, response *restful.Response) {
+func (auth *OAuth2Context) createClient(request *restful.Request, response *restful.Response) {
     clientInfo, err := auth.ClientManager.CreateClient()
     if err != nil {
         response.WriteError(http.StatusInternalServerError, err)
@@ -253,7 +189,7 @@ func (auth *OAuth2) createClient(request *restful.Request, response *restful.Res
     response.Write(b)
 }
 
-func (auth *OAuth2) updateClient(request *restful.Request, response *restful.Response) {
+func (auth *OAuth2Context) updateClient(request *restful.Request, response *restful.Response) {
     client_id := request.PathParameter("client_id")
     secret, err := auth.ClientManager.UpdateClient(client_id)
     if err != nil {
@@ -262,7 +198,7 @@ func (auth *OAuth2) updateClient(request *restful.Request, response *restful.Res
     io.WriteString(response.ResponseWriter, secret)
 }
 
-func (auth *OAuth2) deleteClient(request *restful.Request, response *restful.Response) {
+func (auth *OAuth2Context) deleteClient(request *restful.Request, response *restful.Response) {
     client_id := request.PathParameter("client_id")
     err := auth.ClientManager.DeleteClient(client_id)
     if err != nil {
@@ -271,74 +207,6 @@ func (auth *OAuth2) deleteClient(request *restful.Request, response *restful.Res
     response.WriteHeader(http.StatusOK)
 }
 */
-
-func (auth *OAuth2) wrapRouteFunction(function restful.RouteFunction) restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
-		defer func() {
-			if err := recover(); err != nil && err != http.ErrAbortHandler {
-				const size = 64 << 10
-				buf := make([]byte, size)
-				buf = buf[:runtime.Stack(buf, false)]
-				auth.logger.Errorf("http: panic serving %v: %v\n%s", request.Request.RemoteAddr, err, buf)
-				response.WriteErrorString(http.StatusInternalServerError, "内部错误")
-			}
-		}()
-
-		id := ""
-		if auth.LogHttpInfo {
-			id = idUtil.RandomId(32)
-			util.LogRequest(id, auth.logger.Infof, request)
-		}
-
-		function(request, response)
-
-		if auth.LogHttpInfo {
-			util.LogResponse(id, auth.logger.Infof, response)
-		}
-	}
-}
-
-func (auth *OAuth2) RunWithContainer(wsContainer *restful.Container, host, port string) {
-	auth.Addr = host + ":" + port
-	// 跨域过滤器
-	cors := restful.CrossOriginResourceSharing{
-		ExposeHeaders:  []string{"X-My-Header"},
-		AllowedHeaders: []string{"Content-Type", "Accept"},
-		AllowedMethods: []string{"GET", "POST"},
-		CookiesAllowed: false,
-		Container:      wsContainer}
-	wsContainer.Filter(cors.Filter)
-
-	// Add container filter to respond to OPTIONS
-	wsContainer.Filter(wsContainer.OPTIONSFilter)
-
-	//config := swagger.Config{
-	//    WebServices:    restful.DefaultContainer.RegisteredWebServices(), // you control what services are visible
-	//    WebServicesUrl: "http://localhost:8080",
-	//    ApiPath:        "/apidocs.json",
-	//    ApiVersion:     "V1.0",
-	//    // Optionally, specify where the UI is located
-	//    SwaggerPath:     "/apidocs/",
-	//    SwaggerFilePath: "D:/gowork/oauth2/doublegao/experiment/restful/dist"}
-	//swagger.RegisterSwaggerService(config, wsContainer)
-	//swagger.InstallSwaggerService(config)
-
-	auth.Handle(wsContainer)
-	defer auth.Close()
-
-	log.Println("start listening on localhost:8080")
-	server := &http.Server{Addr: ":" + port, Handler: wsContainer}
-	defer server.Close()
-	log.Fatal(server.ListenAndServe())
-}
-
-func (auth *OAuth2) Run(host, port string) {
-	auth.RunWithContainer(restful.NewContainer(), host, port)
-}
-
-func Run(host, port string) {
-	New().Run(host, port)
-}
 
 type defaultWriter struct {
 }

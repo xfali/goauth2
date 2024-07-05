@@ -22,7 +22,7 @@ import (
 	"net/http"
 )
 
-func ProcessAccessToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+func ProcessAccessToken(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	authorization := request.Header.Get("Authorization")
 
 	if authorization == "" {

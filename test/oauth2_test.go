@@ -22,6 +22,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/xfali/oauth2/v2/clients"
 	"github.com/xfali/oauth2/v2/oauth2"
+	"github.com/xfali/oauth2/v2/servers"
 	"github.com/xfali/oauth2/v2/users"
 	"io"
 	"io/ioutil"
@@ -33,7 +34,8 @@ import (
 )
 
 type test struct {
-	auth         *oauth2.OAuth2
+	auth         *oauth2.OAuth2Context
+	srv          *servers.RestfulServer
 	um           *users.DefaultUserManager
 	cm           *clients.DefaultClientManager
 	clientId     string
@@ -41,6 +43,10 @@ type test struct {
 }
 
 //http://localhost:8080/oauth2/authorize?response_type=code&redirect_uri=http://localhost:8080/test/redirect&scope=test&state=123&client_id=CoBz7Z15ai
+
+const (
+	addr = "http://localhost:8080"
+)
 
 func TestOauth2(t *testing.T) {
 	auth := oauth2.New()
@@ -63,7 +69,9 @@ func TestOauth2(t *testing.T) {
 	container := restful.NewContainer()
 	test.initTestContainer(container)
 
-	auth.RunWithContainer(container, "http://localhost", "8080")
+	srv := servers.NewRestfulServer(auth)
+	test.srv = srv
+	srv.RunWithContainer(container, "http://localhost", "8080")
 }
 
 func (t *test) initTestContainer(container *restful.Container) {
@@ -105,7 +113,7 @@ func (t *test) testRedirect(request *restful.Request, response *restful.Response
 	req.Form.Add("client_id", t.clientId)
 	req.Form.Add("client_secret", t.clientSecret)
 	bodystr := strings.TrimSpace(req.Form.Encode())
-	req2, err := http.NewRequest("POST", t.auth.Addr+"/oauth2/token", strings.NewReader(bodystr))
+	req2, err := http.NewRequest("POST", addr+"/oauth2/token", strings.NewReader(bodystr))
 	if err != nil {
 		response.WriteError(http.StatusBadRequest, err)
 		return

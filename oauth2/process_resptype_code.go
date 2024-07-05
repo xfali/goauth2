@@ -24,7 +24,7 @@ import (
 	"net/http"
 )
 
-func ProcessRespTypeCode(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+func ProcessRespTypeCode(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
 
@@ -67,7 +67,7 @@ func ProcessRespTypeCode(auth *OAuth2, request *http.Request, response http.Resp
 	param["state"] = state
 	param["scope"] = scope
 	param["response_type"] = ResponseTypeCode
-	param["callback"] = auth.Addr + "/oauth2/authorize/web"
+	param["callback"] = auth.CallbackUrl
 
 	url = util.AddParam(url, param)
 
@@ -75,7 +75,7 @@ func ProcessRespTypeCode(auth *OAuth2, request *http.Request, response http.Resp
 	return nil
 }
 
-func ProcessRespTypeWebCode(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+func ProcessRespTypeWebCode(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
 	query := request.URL.Query()

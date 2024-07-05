@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-func ProcessGrantTypeRefreshToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+func ProcessGrantTypeRefreshToken(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
 	basic := request.Header.Get("Authorization")
 

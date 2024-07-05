@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-func ProcessGrantTypeCode(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+func ProcessGrantTypeCode(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//客户端标识
 	client_id := request.FormValue("client_id")
 	if client_id == "" {
