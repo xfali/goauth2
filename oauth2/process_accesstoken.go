@@ -26,7 +26,7 @@ func ProcessAccessToken(auth *OAuth2Context, request *http.Request, response htt
 	authorization := request.Header.Get("Authorization")
 
 	if authorization == "" {
-		return auth.respWriter.Write(response, errcodes.AccessTokenMissing)
+		return auth.respWriter.WriteError(response, errcodes.AccessTokenMissing)
 	}
 
 	access_token, _ := parseBearerInfo(authorization)

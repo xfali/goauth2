@@ -14,19 +14,28 @@
  * limitations under the License.
  */
 
-package users
+package test
 
-import "net/http"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/xfali/oauth2/v2/oauth2"
+	"github.com/xfali/oauth2/v2/servers"
+	"net/http"
+	"testing"
+)
 
-type UserManager interface {
-	// CreateUser
-	// Deprecated: 仅作为测试使用
-	CreateUser(username, password string) error
+func TestGin(t *testing.T) {
+	ctx := oauth2.New()
+	cliInfo, _ := ctx.ClientManager.CreateClient()
+	t.Log(cliInfo)
+	ctx.UserManager.CreateUser("admin", "admin")
+	srv := servers.NewGinServer(ctx)
+	r := gin.New()
+	srv.RunWithEngine(r)
 
-	// CheckUser 验证用户名和密码
-	CheckUser(username, password string) error
-
-	// UserAuthorize 当类型为网页授权时，调用该方法检测用户是否登录
-	// 返回重定向授权页面的地址
-	UserAuthorize(r *http.Request) (string, error)
+	s := http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
+	s.ListenAndServe()
 }

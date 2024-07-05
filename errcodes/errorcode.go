@@ -60,7 +60,7 @@ func NewErrCodeWithHttpStatus(code string, msg string, httpstatus int) *ErrCode 
 
 func (errcode *ErrCode) format() *ErrCode {
 	if errcode.jsonStr == "" {
-		errcode.jsonStr = fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", errcode.Code, errcode.Msg)
+		errcode.jsonStr = fmt.Sprintf("{ \"code\" : %s, \"msg\" : \"%s\" }", errcode.Code, errcode.Msg)
 	}
 	return errcode
 }

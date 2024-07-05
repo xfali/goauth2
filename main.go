@@ -16,8 +16,10 @@
 
 package main
 
-import "github.com/xfali/oauth2/v2/oauth2"
+import (
+	"github.com/xfali/oauth2/v2/servers"
+)
 
 func main() {
-	oauth2.Run("localhost", "8080")
+	servers.Run("localhost", "8080")
 }
