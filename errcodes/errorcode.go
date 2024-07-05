@@ -51,16 +51,16 @@ type ErrCode struct {
 }
 
 func NewErrCode(code string, msg string) *ErrCode {
-	return &ErrCode{code, msg, http.StatusUnauthorized, fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", code, msg)}
+	return &ErrCode{code, msg, http.StatusUnauthorized, fmt.Sprintf(`{ "code" : "%s", "msg" : "%s" }`, code, msg)}
 }
 
 func NewErrCodeWithHttpStatus(code string, msg string, httpstatus int) *ErrCode {
-	return &ErrCode{code, msg, httpstatus, fmt.Sprintf("{ \"code\" : %s, \"msg\" : %s }", code, msg)}
+	return &ErrCode{code, msg, httpstatus, fmt.Sprintf(`{ "code" : "%s", "msg" : "%s" }`, code, msg)}
 }
 
 func (errcode *ErrCode) format() *ErrCode {
 	if errcode.jsonStr == "" {
-		errcode.jsonStr = fmt.Sprintf("{ \"code\" : %s, \"msg\" : \"%s\" }", errcode.Code, errcode.Msg)
+		errcode.jsonStr = fmt.Sprintf(`{ "code" : "%s", "msg" : "%s" }`, errcode.Code, errcode.Msg)
 	}
 	return errcode
 }

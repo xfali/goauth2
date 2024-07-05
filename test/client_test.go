@@ -31,8 +31,8 @@ func TestClient(t *testing.T) {
 		body := bytes.NewBuffer(nil)
 		w := multipart.NewWriter(body)
 		w.WriteField("grant_type", oauth2.GrantTypePassword)
-		w.WriteField("client_id", "12KpwwdeAzY")
-		w.WriteField("client_secret", "wJ7RYk4tGwAceAuCJ6W-rNdWQeGSNccA-waGywdNZhk=")
+		w.WriteField("client_id", "12L0dnUwdmK")
+		w.WriteField("client_secret", "VUq_6pxbc5msKxBJggCih9-UjhciE7DZY-RB4XRrnL4=")
 		w.WriteField("username", "admin")
 		w.WriteField("password", "admin")
 
@@ -44,5 +44,20 @@ func TestClient(t *testing.T) {
 		defer resp.Body.Close()
 
 		io.Copy(os.Stdout, resp.Body)
+	})
+
+	t.Run("test token", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/oauth2/authenticate", nil)
+		req.Header.Add("Authorization", "eyJhxbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiIxMkwwZG5Vd2RtSyIsImV4cCI6MTcyMDEwMzg4OSwiaWF0IjoxNzIwMDk2Njg5fQ.JwkkhDeijHRUtVQScAkwhY6ZpBq6zXdEnepkGxXsYsE")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+
+		io.Copy(os.Stdout, resp.Body)
+		if resp.StatusCode != 200 {
+			t.Fatal("Not 200 ", resp.StatusCode)
+		}
 	})
 }

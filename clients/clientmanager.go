@@ -23,28 +23,33 @@ import (
 	"sync"
 )
 
+var (
+	sf = idUtil.NewSnowFlake()
+)
+
 type DefaultClientManager struct {
 	mutex sync.Mutex
 	db    map[string]string
-	sf    *idUtil.SnowFlake
 }
 
 func NewDefaultClientManager() *DefaultClientManager {
-	return &DefaultClientManager{db: map[string]string{}, sf: idUtil.NewSnowFlake()}
+	return &DefaultClientManager{db: map[string]string{}}
 }
 
-func (cm *DefaultClientManager) CreateClient() (entities.ClientInfo, error) {
+func (cm *DefaultClientManager) CreateClient(ci entities.ClientInfo) error {
 	cm.mutex.Lock()
 	defer cm.mutex.Unlock()
 
-	id, _ := cm.sf.NextId()
-	ci := entities.ClientInfo{
+	cm.db[ci.ClientId] = ci.ClientSecret
+	return nil
+}
+
+func GenerateClientInfo() entities.ClientInfo {
+	id, _ := sf.NextId()
+	return entities.ClientInfo{
 		ClientId:     id.Compress().String(),
 		ClientSecret: idUtil.RandomId(32),
 	}
-
-	cm.db[ci.ClientId] = ci.ClientSecret
-	return ci, nil
 }
 
 func (cm *DefaultClientManager) QuerySecret(clientId string) (string, error) {

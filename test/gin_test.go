@@ -18,17 +18,22 @@ package test
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/xfali/oauth2/v2/clients"
+	"github.com/xfali/oauth2/v2/entities"
 	"github.com/xfali/oauth2/v2/oauth2"
 	"github.com/xfali/oauth2/v2/servers"
+	"github.com/xfali/oauth2/v2/users"
 	"net/http"
 	"testing"
 )
 
 func TestGin(t *testing.T) {
 	ctx := oauth2.New()
-	cliInfo, _ := ctx.ClientManager.CreateClient()
-	t.Log(cliInfo)
-	ctx.UserManager.CreateUser("admin", "admin")
+	_ = ctx.ClientManager.(*clients.DefaultClientManager).CreateClient(entities.ClientInfo{
+		ClientId:     "12L0dnUwdmK",
+		ClientSecret: "VUq_6pxbc5msKxBJggCih9-UjhciE7DZY-RB4XRrnL4=",
+	})
+	ctx.UserManager.(*users.DefaultUserManager).CreateUser("admin", "admin")
 	srv := servers.NewGinServer(ctx)
 	r := gin.New()
 	srv.RunWithEngine(r)

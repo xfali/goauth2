@@ -85,7 +85,8 @@ func (dm *DefaultDataManager) DelCode(code string) error {
 //保存refresh token
 func (dm *DefaultDataManager) SaveRefreshToken(token_data string, refresh_token string, refresh_expire time.Duration) error {
 	if refresh_token != "" {
-		dm.recycleMap.Multi()
+		//_ = dm.recycleMap.Multi()
+		//defer dm.recycleMap.Exec()
 		old_refresh_token := dm.recycleMap.Get(client_refresh_token_prefix + token_data)
 		if old_refresh_token != nil {
 			ttl := dm.recycleMap.TTL(old_refresh_token)
@@ -96,7 +97,7 @@ func (dm *DefaultDataManager) SaveRefreshToken(token_data string, refresh_token 
 		refresh_token = refresh_token_prefix + refresh_token
 		dm.recycleMap.Set(refresh_token, token_data, refresh_expire)
 		dm.recycleMap.Set(client_refresh_token_prefix+token_data, refresh_token, refresh_expire)
-		return dm.recycleMap.Exec()
+		return nil
 	}
 
 	return errcodes.SaveRefreshTokenError
@@ -105,7 +106,8 @@ func (dm *DefaultDataManager) SaveRefreshToken(token_data string, refresh_token 
 //保存refresh token以及access_token
 func (dm *DefaultDataManager) SaveAccessToken(token_data string, access_token string, access_expire time.Duration) error {
 	if access_token != "" {
-		dm.recycleMap.Multi()
+		//_ = dm.recycleMap.Multi()
+		//defer dm.recycleMap.Exec()
 		old_refresh_token := dm.recycleMap.Get(client_access_token_prefix + token_data)
 		if old_refresh_token != nil {
 			ttl := dm.recycleMap.TTL(old_refresh_token)
@@ -116,7 +118,7 @@ func (dm *DefaultDataManager) SaveAccessToken(token_data string, access_token st
 		access_token = access_token_prefix + access_token
 		dm.recycleMap.Set(access_token, token_data, access_expire)
 		dm.recycleMap.Set(client_access_token_prefix+token_data, access_token, access_expire)
-		return dm.recycleMap.Exec()
+		return nil
 	}
 
 	return errcodes.SaveAccessTokenError
@@ -144,7 +146,8 @@ func (dm *DefaultDataManager) GetAccessToken(access_token string) (string, error
 
 //废弃client_id绑定的token，包括refresh token及access token
 func (dm *DefaultDataManager) RevokeToken(client_id string) {
-	dm.recycleMap.Multi()
+	//_ = dm.recycleMap.Multi()
+	//defer dm.recycleMap.Exec()
 	refresh_token := dm.recycleMap.Get(client_refresh_token_prefix + client_id)
 	if refresh_token != nil {
 		dm.recycleMap.Del(refresh_token)
@@ -155,5 +158,4 @@ func (dm *DefaultDataManager) RevokeToken(client_id string) {
 		dm.recycleMap.Del(access_token)
 		dm.recycleMap.Del(client_access_token_prefix + client_id)
 	}
-	dm.recycleMap.Exec()
 }

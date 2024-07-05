@@ -53,7 +53,8 @@ func TestOauth2(t *testing.T) {
 	test := test{auth: auth}
 
 	cm := clients.NewDefaultClientManager()
-	ClientInfo, _ := cm.CreateClient()
+	ClientInfo := clients.GenerateClientInfo()
+	cm.CreateClient(ClientInfo)
 	fmt.Printf("client_id: %s\nclient_secret: %s\n", ClientInfo.ClientId, ClientInfo.ClientSecret)
 	auth.ClientManager = cm
 	test.cm = cm

@@ -21,7 +21,7 @@ import "net/http"
 type UserManager interface {
 	// CreateUser
 	// Deprecated: 仅作为测试使用
-	CreateUser(username, password string) error
+	//CreateUser(username, password string) error
 
 	// CheckUser 验证用户名和密码
 	CheckUser(username, password string) error

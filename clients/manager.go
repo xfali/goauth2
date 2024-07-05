@@ -16,17 +16,15 @@
 
 package clients
 
-import "github.com/xfali/oauth2/v2/entities"
-
 type ClientManager interface {
 	// Deprecated: 仅作为测试使用
-	CreateClient() (entities.ClientInfo, error)
+	//CreateClient(ci entities.ClientInfo) error
 
 	// Deprecated: 仅作为测试使用
-	UpdateClient(clientId string) (string, error)
+	//UpdateClient(clientId string) (string, error)
 
 	// Deprecated: 仅作为测试使用
-	DeleteClient(clientId string) error
+	//DeleteClient(clientId string) error
 
 	// QuerySecret 根据client id查询client secret
 	QuerySecret(clientId string) (string, error)
