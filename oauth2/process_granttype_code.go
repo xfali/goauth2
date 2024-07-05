@@ -18,75 +18,65 @@ package oauth2
 
 import (
 	"encoding/json"
-	"github.com/emicklei/go-restful"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/entities"
 	"github.com/xfali/oauth2/v2/errcodes"
+	"net/http"
 	"time"
 )
 
-func ProcessGrantTypeCode(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessGrantTypeCode(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
 	//客户端标识
-	client_id, err := request.BodyParameter("client_id")
-	if err != nil {
-		response.WriteErrorString(errcodes.ClientIdMissing.HttpStatus, errcodes.ClientIdMissing.Error())
-		return
+	client_id := request.FormValue("client_id")
+	if client_id == "" {
+		return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
 	}
 
 	errCode := auth.EventListener(client_id, constants.AuthorizationCodeTokenEvent)
 	if errCode != nil {
-		response.WriteError(errCode.HttpStatus, errCode)
-		return
+		return auth.respWriter.WriteError(response, errCode)
 	}
 
 	//应用程序包含它在重定向中给出的授权码
-	code, err := request.BodyParameter("code")
-	if err != nil {
-		response.WriteErrorString(errcodes.CodeIsMissing.HttpStatus, errcodes.CodeIsMissing.Error())
-		return
+	code := request.FormValue("code")
+	if code == "" {
+		return auth.respWriter.WriteError(response, errcodes.CodeIsMissing)
 	}
 
 	id, scope, err := auth.DataManager.GetCode(code)
 	if err != nil {
-		response.WriteErrorString(errcodes.CodeIsInvalid.HttpStatus, errcodes.CodeIsInvalid.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.CodeIsInvalid)
 	}
 
 	if client_id != id {
-		response.WriteErrorString(errcodes.ClientSecretNotMatch.HttpStatus, errcodes.ClientSecretNotMatch.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientSecretNotMatch)
 	}
 
 	//应用程序的客户端密钥。这确保了获取access token的请求只能从客户端发出，而不能从可能截获authorization code的攻击者发出
-	client_secret, err := request.BodyParameter("client_secret")
-	if err != nil {
-		response.WriteErrorString(errcodes.ClientSecretMissing.HttpStatus, errcodes.ClientSecretMissing.Error())
-		return
+	client_secret := request.FormValue("client_secret")
+	if client_secret == "" {
+		return auth.respWriter.WriteError(response, errcodes.ClientSecretMissing)
 	}
 
 	secret, err := auth.ClientManager.QuerySecret(client_id)
 	if err != nil {
-		response.WriteErrorString(errcodes.CheckClientIdError.HttpStatus, errcodes.CheckClientIdError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
 	}
 
 	if client_secret != secret {
-		response.WriteErrorString(errcodes.ClientSecretNotMatch.HttpStatus, errcodes.ClientSecretNotMatch.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientSecretNotMatch)
 	}
 
 	//与请求authorization code时使用的redirect_uri相同。某些资源（API）不需要此参数。
 	//redirect_uri, err := request.BodyParameter("redirect_uri")
 	accessToken, err := generateToken(client_id, client_secret, constants.AccessTokenExpireTime)
 	if err != nil {
-		response.WriteErrorString(errcodes.GenerateAccessTokenError.HttpStatus, errcodes.GenerateAccessTokenError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.GenerateAccessTokenError)
 	}
 
 	refreshToken, err := generateToken(client_id, client_secret, constants.RefreshTokenExpireTime)
 	if err != nil {
-		response.WriteErrorString(errcodes.GenerateRefreshTokenError.HttpStatus, errcodes.GenerateRefreshTokenError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.GenerateRefreshTokenError)
 	}
 
 	token := entities.Token{
@@ -99,18 +89,16 @@ func ProcessGrantTypeCode(auth *OAuth2, request *restful.Request, response *rest
 
 	saveErr := saveToken(auth.DataManager, client_id, token.AccessToken, client_id, token.RefreshToken)
 	if saveErr != nil {
-		response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
-		return
+		return auth.respWriter.WriteError(response, saveErr)
 	}
 
 	tokenByte, err := json.Marshal(&token)
 	if err != nil {
-		response.WriteErrorString(errcodes.InternalError.HttpStatus, errcodes.InternalError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.InternalError)
 	}
-
-	response.Write(tokenByte)
-
 	//code只能用一次
-	auth.DataManager.DelCode(code)
+	defer auth.DataManager.DelCode(code)
+
+	return auth.respWriter.Write(response, string(tokenByte))
+
 }

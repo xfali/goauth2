@@ -17,7 +17,6 @@
 package oauth2
 
 import (
-	"github.com/emicklei/go-restful"
 	"github.com/xfali/goutils/idUtil"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/errcodes"
@@ -25,68 +24,64 @@ import (
 	"net/http"
 )
 
-func ProcessRespTypeCode(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessRespTypeCode(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
 
-	client_id := request.QueryParameter("client_id")
+	query := request.URL.Query()
+	client_id := query.Get("client_id")
 	if client_id == "" {
-		response.WriteErrorString(errcodes.ClientIdMissing.HttpStatus, errcodes.ClientIdMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
 	}
 
 	errCode := auth.EventListener(client_id, constants.AuthorizationCodeEvent)
 	if errCode != nil {
-		response.WriteError(errCode.HttpStatus, errCode)
-		return
+		return auth.respWriter.WriteError(response, errCode)
 	}
 
-	redirect_uri := request.QueryParameter("redirect_uri")
+	redirect_uri := query.Get("redirect_uri")
 	if redirect_uri == "" {
-		response.WriteErrorString(errcodes.RedirectUriMissing.HttpStatus, errcodes.RedirectUriMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.RedirectUriMissing)
 	}
 
-	scope := request.QueryParameter("scope")
+	scope := query.Get("scope")
 	if scope == "" {
 		//response.WriteErrorString(errcodes.SCOPE_MISSING.HttpStatus, errcodes.SCOPE_MISSING.Error())
 		//return
 	} else {
-		if !auth.ClientManager.CheckScope(client_id, RESPONSE_TYPE_CODE, scope) {
-			response.WriteErrorString(errcodes.ScopeError.HttpStatus, errcodes.ScopeError.Error())
-			return
+		if !auth.ClientManager.CheckScope(client_id, ResponseTypeCode, scope) {
+			return auth.respWriter.WriteError(response, errcodes.ScopeError)
 		}
 	}
 
-	url, err := auth.UserManager.UserAuthorize(request.Request)
+	url, err := auth.UserManager.UserAuthorize(request)
 	if err != nil {
-		response.WriteErrorString(errcodes.UserAuthorizeCheckError.HttpStatus, errcodes.UserAuthorizeCheckError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.UserAuthorizeCheckError)
 	}
 
-	state := request.QueryParameter("state")
+	state := query.Get("state")
 
 	param := map[string]string{}
 	param["client_id"] = client_id
 	param["redirect_uri"] = redirect_uri
 	param["state"] = state
 	param["scope"] = scope
-	param["response_type"] = RESPONSE_TYPE_CODE
+	param["response_type"] = ResponseTypeCode
 	param["callback"] = auth.Addr + "/oauth2/authorize/web"
 
 	url = util.AddParam(url, param)
 
-	http.Redirect(response.ResponseWriter, request.Request, url, http.StatusFound)
+	http.Redirect(response, request, url, http.StatusFound)
+	return nil
 }
 
-func ProcessRespTypeWebCode(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessRespTypeWebCode(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
-
-	client_id := request.QueryParameter("client_id")
+	query := request.URL.Query()
+	client_id := query.Get("client_id")
 	if client_id == "" {
-		response.WriteErrorString(errcodes.ClientIdMissing.HttpStatus, errcodes.ClientIdMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
 	}
 
 	//check at begin
@@ -96,35 +91,33 @@ func ProcessRespTypeWebCode(auth *OAuth2, request *restful.Request, response *re
 	//    return
 	//}
 
-	redirect_uri := request.QueryParameter("redirect_uri")
+	redirect_uri := query.Get("redirect_uri")
 	if redirect_uri == "" {
-		response.WriteErrorString(errcodes.RedirectUriMissing.HttpStatus, errcodes.RedirectUriMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.RedirectUriMissing)
 	}
 
-	scope := request.QueryParameter("scope")
+	scope := query.Get("scope")
 	if scope == "" {
 		//response.WriteErrorString(errcodes.SCOPE_MISSING.HttpStatus, errcodes.SCOPE_MISSING.Error())
 		//return
 	} else {
-		if !auth.ClientManager.CheckScope(client_id, RESPONSE_TYPE_CODE, scope) {
-			response.WriteErrorString(errcodes.ScopeError.HttpStatus, errcodes.ScopeError.Error())
-			return
+		if !auth.ClientManager.CheckScope(client_id, ResponseTypeCode, scope) {
+			return auth.respWriter.WriteError(response, errcodes.ScopeError)
 		}
 	}
 
-	state := request.QueryParameter("state")
+	state := query.Get("state")
 
 	code := idUtil.RandomId(30)
 	err := auth.DataManager.SaveCode(client_id, code, scope, auth.CodeExpireTime)
 	if err != nil {
-		response.WriteErrorString(errcodes.SaveDataError.HttpStatus, errcodes.SaveDataError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.SaveDataError)
 	}
 
 	param := map[string]string{}
 	param["code"] = code
 	param["state"] = state
 	redirect_uri = util.AddParam(redirect_uri, param)
-	http.Redirect(response.ResponseWriter, request.Request, redirect_uri, http.StatusFound)
+	http.Redirect(response, request, redirect_uri, http.StatusFound)
+	return nil
 }

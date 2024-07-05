@@ -18,89 +18,77 @@ package oauth2
 
 import (
 	"encoding/json"
-	"github.com/emicklei/go-restful"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/entities"
 	"github.com/xfali/oauth2/v2/errcodes"
+	"net/http"
 	"time"
 )
 
-func ProcessGrantTypePassword(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessGrantTypePassword(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
-	basic := request.HeaderParameter("Authorization")
+	basic := request.Header.Get("Authorization")
 
 	var client_id, client_secret string
 
 	if basic == "" {
-		tmp, err := request.BodyParameter("client_id")
-		if err != nil {
-			response.WriteErrorString(errcodes.PasswordCredentialsHeadMissing.HttpStatus, errcodes.PasswordCredentialsHeadMissing.Error()+"and"+errcodes.ClientIdMissing.Error())
-			return
+		client_id = request.FormValue("client_id")
+		if client_id == "" {
+			return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
 		}
-		client_id = tmp
 
-		tmp2, err := request.BodyParameter("client_secret")
-		if err != nil {
-			response.WriteErrorString(errcodes.ClientSecretMissing.HttpStatus, errcodes.ClientSecretMissing.Error())
-			return
+		client_secret = request.FormValue("client_secret")
+		if client_secret == "" {
+			return auth.respWriter.WriteError(response, errcodes.ClientSecretMissing)
 		}
-		client_secret = tmp2
 	} else {
 		var err *errcodes.ErrCode = nil
 		client_id, client_secret, err = parseBasicInfo(basic)
 		if err != nil {
-			response.WriteErrorString(err.HttpStatus, err.Error())
+			return auth.respWriter.WriteError(response, err)
 		}
 	}
 
 	//check client_id and client_secret
 	secret, err := auth.ClientManager.QuerySecret(client_id)
 	if err != nil {
-		response.WriteErrorString(errcodes.CheckClientIdError.HttpStatus, errcodes.CheckClientIdError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
 	}
 
 	if client_secret != secret {
-		response.WriteErrorString(errcodes.ClientSecretNotMatch.HttpStatus, errcodes.ClientSecretNotMatch.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientSecretNotMatch)
 	}
 
 	errCode := auth.EventListener(client_id, constants.PasswordTokenEvent)
 	if errCode != nil {
-		response.WriteError(errCode.HttpStatus, errCode)
-		return
+		return auth.respWriter.WriteError(response, errCode)
 	}
 
-	username, err := request.BodyParameter("username")
-	if err != nil {
-		response.WriteErrorString(errcodes.UsernameMissing.HttpStatus, errcodes.UsernameMissing.Error())
-		return
+	username := request.FormValue("username")
+	if username == "" {
+		return auth.respWriter.WriteError(response, errcodes.UsernameMissing)
 	}
 
-	password, err := request.BodyParameter("password")
-	if err != nil {
-		response.WriteErrorString(errcodes.PasswordMissing.HttpStatus, errcodes.PasswordMissing.Error())
-		return
+	password := request.FormValue("password")
+	if password == "" {
+		return auth.respWriter.WriteError(response, errcodes.PasswordMissing)
 	}
 
 	checkErr := auth.UserManager.CheckUser(username, password)
 	if checkErr != nil {
-		response.WriteErrorString(errcodes.PasswordNotMatch.HttpStatus, errcodes.PasswordNotMatch.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.PasswordNotMatch)
 	}
 
 	//与请求authorization code时使用的redirect_uri相同。某些资源（API）不需要此参数。
 	//redirect_uri, err := request.BodyParameter("redirect_uri")
 	accessToken, err := generateToken(client_id, client_secret, constants.AccessTokenExpireTime)
 	if err != nil {
-		response.WriteErrorString(errcodes.GenerateAccessTokenError.HttpStatus, errcodes.GenerateAccessTokenError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.GenerateAccessTokenError)
 	}
 
 	refreshToken, err := generateToken(client_id, client_secret, constants.RefreshTokenExpireTime)
 	if err != nil {
-		response.WriteErrorString(errcodes.GenerateRefreshTokenError.HttpStatus, errcodes.GenerateRefreshTokenError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.GenerateRefreshTokenError)
 	}
 
 	token := entities.Token{
@@ -113,15 +101,13 @@ func ProcessGrantTypePassword(auth *OAuth2, request *restful.Request, response *
 
 	saveErr := saveToken(auth.DataManager, client_id, token.AccessToken, client_id, token.RefreshToken)
 	if saveErr != nil {
-		response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
-		return
+		return auth.respWriter.WriteError(response, saveErr)
 	}
 
 	tokenByte, err := json.Marshal(&token)
 	if err != nil {
-		response.WriteErrorString(errcodes.InternalError.HttpStatus, errcodes.InternalError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.InternalError)
 	}
 
-	response.Write(tokenByte)
+	return auth.respWriter.Write(response, string(tokenByte))
 }

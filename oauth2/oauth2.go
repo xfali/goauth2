@@ -17,14 +17,17 @@
 package oauth2
 
 import (
+	"encoding/json"
 	"github.com/emicklei/go-restful"
 	"github.com/xfali/goutils/idUtil"
 	"github.com/xfali/oauth2/v2/clients"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/datas"
+	"github.com/xfali/oauth2/v2/errcodes"
 	"github.com/xfali/oauth2/v2/events"
 	"github.com/xfali/oauth2/v2/users"
 	"github.com/xfali/oauth2/v2/util"
+	"github.com/xfali/xlog"
 	"io"
 	"log"
 	"net/http"
@@ -33,19 +36,23 @@ import (
 )
 
 const (
-	RESPONSE_TYPE_CODE  = "code"
-	RESPONSE_TYPE_TOKEN = "token"
+	ResponseTypeCode  = "code"
+	ResponseTypeToken = "token"
 
-	GRANT_TYPE_CODE         = "authorization_code"
-	GRANT_TYPE_IMPLICIT     = "implicit"
-	GRANT_TYPE_PASSWORD     = "password"
-	GRANT_TYPE_CLIENTCERD   = "client_credentials"
-	GRANT_TYPE_DEVICECODE   = "device code"
-	GRANT_TYPE_REFRESHTOKEN = "refresh_token"
+	GrantTypeCode              = "authorization_code"
+	GrantTypeImplicit          = "implicit"
+	GrantTypePassword          = "password"
+	GrantTypeClientCredentials = "client_credentials"
+	GrantTypeDeviceCode        = "device code"
+	GrantTypeRefreshToken      = "refresh_token"
 )
 
-type ResponseTypeFunc func(auth *OAuth2, request *restful.Request, response *restful.Response)
-type GrantTypeFunc func(auth *OAuth2, request *restful.Request, response *restful.Response)
+type ResponseTypeFunc func(auth *OAuth2, request *http.Request, response http.ResponseWriter) error
+type GrantTypeFunc func(auth *OAuth2, request *http.Request, response http.ResponseWriter) error
+type Writer interface {
+	Write(w http.ResponseWriter, o interface{}) error
+	WriteError(w http.ResponseWriter, code *errcodes.ErrCode) error
+}
 
 type OAuth2 struct {
 	Addr           string
@@ -54,8 +61,10 @@ type OAuth2 struct {
 	DataManager    datas.DataManager
 	EventListener  events.EventListener
 	CodeExpireTime time.Duration
-	ErrorLog       *log.Logger
+	logger         xlog.Logger
 	LogHttpInfo    bool
+
+	respWriter Writer
 
 	processRespMap    map[string]ResponseTypeFunc
 	processRespWebMap map[string]ResponseTypeFunc
@@ -68,27 +77,29 @@ func New() *OAuth2 {
 
 func NewWithWebCode(loginUrl, authorizeUrl string) *OAuth2 {
 	ret := &OAuth2{
+		logger:            xlog.GetLogger(),
 		UserManager:       users.NewDefaultUserManager(loginUrl, authorizeUrl),
 		ClientManager:     clients.NewDefaultClientManager(),
 		DataManager:       datas.NewDefaultDataManager(0),
 		EventListener:     events.DefaultEventListener,
 		CodeExpireTime:    constants.AuthorizationCodeExpireTime,
 		LogHttpInfo:       true,
+		respWriter:        &defaultWriter{},
 		processRespMap:    map[string]ResponseTypeFunc{},
 		processRespWebMap: map[string]ResponseTypeFunc{},
 		processGrantMap:   map[string]GrantTypeFunc{},
 	}
 
-	ret.RegisterRespProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeCode)
-	ret.RegisterRespWebProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeWebCode)
+	ret.RegisterRespProcessor(ResponseTypeCode, ProcessRespTypeCode)
+	ret.RegisterRespWebProcessor(ResponseTypeCode, ProcessRespTypeWebCode)
 	//It is generally not recommended to use the implicit flow
 	//ret.RegisterRespProcessor(RESPONSE_TYPE_TOKEN, ProcessRespTypeToken)
 	//ret.RegisterRespWebProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeWebCode)
-	ret.RegisterRespProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeCode)
-	ret.RegisterGrantProcessor(GRANT_TYPE_CODE, ProcessGrantTypeCode)
-	ret.RegisterGrantProcessor(GRANT_TYPE_PASSWORD, ProcessGrantTypePassword)
-	ret.RegisterGrantProcessor(GRANT_TYPE_CLIENTCERD, ProcessGrantTypeClientCredentials)
-	ret.RegisterGrantProcessor(GRANT_TYPE_REFRESHTOKEN, ProcessGrantTypeRefreshToken)
+	ret.RegisterRespProcessor(ResponseTypeCode, ProcessRespTypeCode)
+	ret.RegisterGrantProcessor(GrantTypeCode, ProcessGrantTypeCode)
+	ret.RegisterGrantProcessor(GrantTypePassword, ProcessGrantTypePassword)
+	ret.RegisterGrantProcessor(GrantTypeClientCredentials, ProcessGrantTypeClientCredentials)
+	ret.RegisterGrantProcessor(GrantTypeRefreshToken, ProcessGrantTypeRefreshToken)
 
 	return ret
 }
@@ -268,7 +279,7 @@ func (auth *OAuth2) wrapRouteFunction(function restful.RouteFunction) restful.Ro
 				const size = 64 << 10
 				buf := make([]byte, size)
 				buf = buf[:runtime.Stack(buf, false)]
-				auth.logf("http: panic serving %v: %v\n%s", request.Request.RemoteAddr, err, buf)
+				auth.logger.Errorf("http: panic serving %v: %v\n%s", request.Request.RemoteAddr, err, buf)
 				response.WriteErrorString(http.StatusInternalServerError, "内部错误")
 			}
 		}()
@@ -276,22 +287,14 @@ func (auth *OAuth2) wrapRouteFunction(function restful.RouteFunction) restful.Ro
 		id := ""
 		if auth.LogHttpInfo {
 			id = idUtil.RandomId(32)
-			util.LogRequest(id, auth.logf, request)
+			util.LogRequest(id, auth.logger.Infof, request)
 		}
 
 		function(request, response)
 
 		if auth.LogHttpInfo {
-			util.LogResponse(id, auth.logf, response)
+			util.LogResponse(id, auth.logger.Infof, response)
 		}
-	}
-}
-
-func (auth *OAuth2) logf(format string, args ...interface{}) {
-	if auth.ErrorLog != nil {
-		auth.ErrorLog.Printf(format, args...)
-	} else {
-		log.Printf(format, args...)
 	}
 }
 
@@ -335,4 +338,30 @@ func (auth *OAuth2) Run(host, port string) {
 
 func Run(host, port string) {
 	New().Run(host, port)
+}
+
+type defaultWriter struct {
+}
+
+func (dw *defaultWriter) Write(w http.ResponseWriter, o interface{}) error {
+	if s, ok := o.(string); ok {
+		_, err := io.WriteString(w, s)
+		return err
+	} else {
+		v, err := json.Marshal(o)
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(v)
+		return err
+	}
+}
+
+func (dw *defaultWriter) WriteError(w http.ResponseWriter, code *errcodes.ErrCode) error {
+	if code != nil {
+		w.WriteHeader(code.HttpStatus)
+		_, err := w.Write([]byte(code.Error()))
+		return err
+	}
+	return nil
 }

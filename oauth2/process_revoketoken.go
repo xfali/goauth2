@@ -17,58 +17,51 @@
 package oauth2
 
 import (
-	"github.com/emicklei/go-restful"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/errcodes"
 	"net/http"
 )
 
-func ProcessRevokeToken(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessRevokeToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
-	basic := request.HeaderParameter("Authorization")
+	basic := request.Header.Get("Authorization")
 
 	var client_id, client_secret string
 	if basic == "" {
-		tmp, err := request.BodyParameter("client_id")
-		if err != nil {
-			response.WriteErrorString(errcodes.PasswordCredentialsHeadMissing.HttpStatus, errcodes.PasswordCredentialsHeadMissing.Error()+"and"+errcodes.ClientIdMissing.Error())
-			return
+		client_id = request.FormValue("client_id")
+		if client_id == "" {
+			return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
 		}
-		client_id = tmp
 
-		tmp2, err := request.BodyParameter("client_secret")
-		if err != nil {
-			response.WriteErrorString(errcodes.ClientSecretMissing.HttpStatus, errcodes.ClientSecretMissing.Error())
-			return
+		client_secret = request.FormValue("client_secret")
+		if client_secret == "" {
+			return auth.respWriter.WriteError(response, errcodes.ClientSecretMissing)
 		}
-		client_secret = tmp2
 	} else {
 		var err *errcodes.ErrCode = nil
 		client_id, client_secret, err = parseBasicInfo(basic)
 		if err != nil {
-			response.WriteErrorString(err.HttpStatus, err.Error())
+			return auth.respWriter.WriteError(response, err)
 		}
 	}
 
 	//check client_id and client_secret
 	secret, err := auth.ClientManager.QuerySecret(client_id)
 	if err != nil {
-		response.WriteErrorString(errcodes.CheckClientIdError.HttpStatus, errcodes.CheckClientIdError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
 	}
 
 	if client_secret != secret {
-		response.WriteErrorString(errcodes.ClientSecretNotMatch.HttpStatus, errcodes.ClientSecretNotMatch.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientSecretNotMatch)
 	}
 
 	errCode := auth.EventListener(client_id, constants.RevokeToken)
 	if errCode != nil {
-		response.WriteError(errCode.HttpStatus, errCode)
-		return
+		return auth.respWriter.WriteError(response, errCode)
 	}
 
 	auth.DataManager.RevokeToken(client_id)
 
 	response.WriteHeader(http.StatusOK)
+	return nil
 }

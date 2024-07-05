@@ -17,33 +17,29 @@
 package oauth2
 
 import (
-	"github.com/emicklei/go-restful"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/errcodes"
-	"io"
+	"net/http"
 )
 
-func ProcessAccessToken(auth *OAuth2, request *restful.Request, response *restful.Response) {
-	authorization := request.HeaderParameter("Authorization")
+func ProcessAccessToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
+	authorization := request.Header.Get("Authorization")
 
 	if authorization == "" {
-		response.WriteErrorString(errcodes.AccessTokenMissing.HttpStatus, errcodes.AccessTokenMissing.Error())
-		return
+		return auth.respWriter.Write(response, errcodes.AccessTokenMissing)
 	}
 
 	access_token, _ := parseBearerInfo(authorization)
 
 	client_id, err := auth.DataManager.GetAccessToken(access_token)
 	if err != nil || client_id == "" {
-		response.WriteErrorString(errcodes.AuthenticateAccessTokenError.HttpStatus, errcodes.AuthenticateAccessTokenError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.AuthenticateAccessTokenError)
 	}
 
 	errCode := auth.EventListener(client_id, constants.AuthenticateToken)
 	if errCode != nil {
-		response.WriteError(errCode.HttpStatus, errCode)
-		return
+		return auth.respWriter.WriteError(response, errCode)
 	}
 
-	io.WriteString(response.ResponseWriter, client_id)
+	return auth.respWriter.Write(response, client_id)
 }

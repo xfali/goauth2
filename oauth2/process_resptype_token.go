@@ -17,64 +17,56 @@
 package oauth2
 
 import (
-	"github.com/emicklei/go-restful"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/errcodes"
 	"github.com/xfali/oauth2/v2/util"
 	"net/http"
 )
 
-func ProcessRespTypeToken(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessRespTypeToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
-
-	client_id := request.QueryParameter("client_id")
+	query := request.URL.Query()
+	client_id := query.Get("client_id")
 	if client_id == "" {
-		response.WriteErrorString(errcodes.ClientIdMissing.HttpStatus, errcodes.ClientIdMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
 	}
 
 	errCode := auth.EventListener(client_id, constants.ImplicitEvent)
 	if errCode != nil {
-		response.WriteError(errCode.HttpStatus, errCode)
-		return
+		return auth.respWriter.WriteError(response, errCode)
 	}
 
-	redirect_uri := request.QueryParameter("redirect_uri")
+	redirect_uri := query.Get("redirect_uri")
 	if redirect_uri == "" {
-		response.WriteErrorString(errcodes.RedirectUriMissing.HttpStatus, errcodes.RedirectUriMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.RedirectUriMissing)
 	}
 
-	scope := request.QueryParameter("scope")
+	scope := query.Get("scope")
 	if scope == "" {
 		//response.WriteErrorString(errcodes.SCOPE_MISSING.HttpStatus, errcodes.SCOPE_MISSING.Error())
 		//return
 	} else {
-		if !auth.ClientManager.CheckScope(client_id, RESPONSE_TYPE_TOKEN, scope) {
-			response.WriteErrorString(errcodes.ScopeError.HttpStatus, errcodes.ScopeError.Error())
-			return
+		if !auth.ClientManager.CheckScope(client_id, ResponseTypeToken, scope) {
+			return auth.respWriter.WriteError(response, errcodes.ScopeError)
 		}
 	}
 
-	state := request.QueryParameter("state")
+	state := query.Get("state")
 
 	secret, err := auth.ClientManager.QuerySecret(client_id)
 	if err != nil {
-		response.WriteErrorString(errcodes.CheckClientIdError.HttpStatus, errcodes.CheckClientIdError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
 	}
 
 	accessToken, err := generateToken(client_id, secret, constants.AccessTokenExpireTime)
 	if err != nil {
-		response.WriteErrorString(errcodes.GenerateAccessTokenError.HttpStatus, errcodes.GenerateAccessTokenError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.GenerateAccessTokenError)
 	}
 
 	saveErr := saveToken(auth.DataManager, client_id, accessToken, "", "")
 	if saveErr != nil {
-		response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
-		return
+		return auth.respWriter.WriteError(response, saveErr)
 	}
 
 	param := map[string]string{}
@@ -82,17 +74,18 @@ func ProcessRespTypeToken(auth *OAuth2, request *restful.Request, response *rest
 	redirect_uri = util.AddParam(redirect_uri, param)
 	redirect_uri = util.AddFragment(redirect_uri, "access_token", accessToken)
 
-	http.Redirect(response.ResponseWriter, request.Request, redirect_uri, http.StatusFound)
+	http.Redirect(response, request, redirect_uri, http.StatusFound)
+	return nil
 }
 
-func ProcessRespTypeWebToken(auth *OAuth2, request *restful.Request, response *restful.Response) {
+func ProcessRespTypeWebToken(auth *OAuth2, request *http.Request, response http.ResponseWriter) error {
 	//FIXME:
 	//redirect to user and password page
 
-	client_id := request.QueryParameter("client_id")
+	query := request.URL.Query()
+	client_id := query.Get("client_id")
 	if client_id == "" {
-		response.WriteErrorString(errcodes.ClientIdMissing.HttpStatus, errcodes.ClientIdMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
 	}
 
 	//check at begin
@@ -102,41 +95,36 @@ func ProcessRespTypeWebToken(auth *OAuth2, request *restful.Request, response *r
 	//    return
 	//}
 
-	redirect_uri := request.QueryParameter("redirect_uri")
+	redirect_uri := query.Get("redirect_uri")
 	if redirect_uri == "" {
-		response.WriteErrorString(errcodes.RedirectUriMissing.HttpStatus, errcodes.RedirectUriMissing.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.RedirectUriMissing)
 	}
 
-	scope := request.QueryParameter("scope")
+	scope := query.Get("scope")
 	if scope == "" {
 		//response.WriteErrorString(errcodes.SCOPE_MISSING.HttpStatus, errcodes.SCOPE_MISSING.Error())
 		//return
 	} else {
-		if !auth.ClientManager.CheckScope(client_id, RESPONSE_TYPE_TOKEN, scope) {
-			response.WriteErrorString(errcodes.ScopeError.HttpStatus, errcodes.ScopeError.Error())
-			return
+		if !auth.ClientManager.CheckScope(client_id, ResponseTypeToken, scope) {
+			return auth.respWriter.WriteError(response, errcodes.ScopeError)
 		}
 	}
 
-	state := request.QueryParameter("state")
+	state := query.Get("state")
 
 	secret, err := auth.ClientManager.QuerySecret(client_id)
 	if err != nil {
-		response.WriteErrorString(errcodes.CheckClientIdError.HttpStatus, errcodes.CheckClientIdError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
 	}
 
 	accessToken, err := generateToken(client_id, secret, constants.AccessTokenExpireTime)
 	if err != nil {
-		response.WriteErrorString(errcodes.GenerateAccessTokenError.HttpStatus, errcodes.GenerateAccessTokenError.Error())
-		return
+		return auth.respWriter.WriteError(response, errcodes.GenerateAccessTokenError)
 	}
 
 	saveErr := saveToken(auth.DataManager, client_id, accessToken, "", "")
 	if saveErr != nil {
-		response.WriteErrorString(saveErr.HttpStatus, saveErr.Error())
-		return
+		return auth.respWriter.WriteError(response, saveErr)
 	}
 
 	param := map[string]string{}
@@ -144,5 +132,6 @@ func ProcessRespTypeWebToken(auth *OAuth2, request *restful.Request, response *r
 	redirect_uri = util.AddParam(redirect_uri, param)
 	redirect_uri = util.AddFragment(redirect_uri, "access_token", accessToken)
 
-	http.Redirect(response.ResponseWriter, request.Request, redirect_uri, http.StatusFound)
+	http.Redirect(response, request, redirect_uri, http.StatusFound)
+	return nil
 }

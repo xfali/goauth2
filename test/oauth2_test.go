@@ -100,7 +100,7 @@ func (t *test) testRedirect(request *restful.Request, response *restful.Response
 
 	var req http.Request
 	req.ParseForm()
-	req.Form.Add("grant_type", oauth2.GRANT_TYPE_CODE)
+	req.Form.Add("grant_type", oauth2.GrantTypeCode)
 	req.Form.Add("code", code)
 	req.Form.Add("client_id", t.clientId)
 	req.Form.Add("client_secret", t.clientSecret)
