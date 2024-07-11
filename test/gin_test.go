@@ -18,6 +18,7 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/xfali/oauth2/v2/clients"
 	"github.com/xfali/oauth2/v2/entities"
@@ -97,13 +98,13 @@ func TestGin(t *testing.T) {
 
 		ctx.Writer.Write(body)
 
-		//token := &entities.Token{}
-		//_ = json.Unmarshal(body, token)
-		//
-		//err = cli.Authorize(context.Background(), "http://localhost:8080/oauth2/authorize", token.AccessToken)
-		//if err != nil {
-		//	t.Fatal(err)
-		//}
+		token := &entities.Token{}
+		_ = json.Unmarshal(body, token)
+
+		err = cli.Authorize(context.Background(), "http://localhost:8080/oauth2/authenticate", token.AccessToken)
+		if err != nil {
+			t.Log(err)
+		}
 	})
 	srv.RunWithEngine("http://localhost:8080", r)
 
