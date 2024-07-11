@@ -46,10 +46,19 @@ func (um *DefaultUserManager) CreateUser(username, password string) error {
 }
 
 func (um *DefaultUserManager) UserAuthorize(r *http.Request) (string, error) {
-	_, err := r.Cookie("JSESSIONID")
+	_, err := r.Cookie("Authorization")
 	if err != nil {
 		return um.loginUrl, nil
 	} else {
 		return um.authorizeUrl, nil
+	}
+}
+
+func (um *DefaultUserManager) ExtractToken(r *http.Request) (string, error) {
+	c, err := r.Cookie("Authorization")
+	if err != nil {
+		return "", errcodes.AccessTokenMissing
+	} else {
+		return c.Value, nil
 	}
 }

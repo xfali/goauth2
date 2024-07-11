@@ -48,7 +48,7 @@ func TestClient(t *testing.T) {
 
 	t.Run("test token", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "http://localhost:8080/oauth2/authenticate", nil)
-		req.Header.Add("Authorization", "eyJhxbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiIxMkwwZG5Vd2RtSyIsImV4cCI6MTcyMDEwMzg4OSwiaWF0IjoxNzIwMDk2Njg5fQ.JwkkhDeijHRUtVQScAkwhY6ZpBq6zXdEnepkGxXsYsE")
+		req.Header.Add("Authorization", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiIxMkwwZG5Vd2RtSyIsImV4cCI6MTcyMDUyMzEzOCwiaWF0IjoxNzIwNTE1OTM4fQ.CGtkv_9PphMQkMR5-1GIYjPERPeH2NH4sdeq0CY_JtE")
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatal(err)

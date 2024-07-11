@@ -39,7 +39,7 @@ const (
 )
 
 const (
-	AuthorizationCodeExpireTime = 1 * time.Minute
+	AuthorizationCodeExpireTime = 5 * time.Minute
 	AccessTokenExpireTime       = 2 * time.Hour
 	RefreshTokenExpireTime      = 30 * 24 * time.Hour
 	TokenKeepExpireTime         = 5 * time.Minute

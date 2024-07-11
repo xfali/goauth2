@@ -45,7 +45,7 @@ func (s *GinServer) wrapRouteFunction(function func(request *http.Request, respo
 	}
 }
 
-func (s *GinServer) RunWithEngine(engine *gin.Engine) {
+func (s *GinServer) RunWithEngine(addr string, engine *gin.Engine) {
 	group := engine.Group("/oauth2")
 
 	group.GET("/authorize", s.wrapRouteFunction(s.ctx.Authorize))
@@ -53,4 +53,6 @@ func (s *GinServer) RunWithEngine(engine *gin.Engine) {
 	group.POST("/token", s.wrapRouteFunction(s.ctx.Token))
 	group.GET("/authenticate", s.wrapRouteFunction(s.ctx.Authenticate))
 	group.DELETE("/token", s.wrapRouteFunction(s.ctx.Revoke))
+
+	s.ctx.CallbackUrl = addr + "/" + group.BasePath() + "/authorize/web"
 }

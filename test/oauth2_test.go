@@ -29,6 +29,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -199,5 +200,8 @@ func (t *test) backend(request *restful.Request, response *restful.Response) {
 
 func getResourcePath(file string) string {
 	path := os.Getenv("resource.path")
-	return path + "/html/" + file
+	if path == "" {
+		path = "../resource"
+	}
+	return filepath.Join(path, "html", file)
 }

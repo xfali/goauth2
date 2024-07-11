@@ -81,7 +81,9 @@ func ProcessGrantTypePassword(auth *OAuth2Context, request *http.Request, respon
 
 	//与请求authorization code时使用的redirect_uri相同。某些资源（API）不需要此参数。
 	//redirect_uri, err := request.BodyParameter("redirect_uri")
-	accessToken, err := generateToken(client_id, client_secret, constants.AccessTokenExpireTime)
+	accessToken, err := generateToken(client_id, client_secret, constants.AccessTokenExpireTime, map[string]string{
+		TokenClaimKeyUsername: username,
+	})
 	if err != nil {
 		return auth.respWriter.WriteError(response, errcodes.GenerateAccessTokenError)
 	}

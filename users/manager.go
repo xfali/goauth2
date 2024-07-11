@@ -29,4 +29,8 @@ type UserManager interface {
 	// UserAuthorize 当类型为网页授权时，调用该方法检测用户是否登录
 	// 返回重定向授权页面的地址
 	UserAuthorize(r *http.Request) (string, error)
+
+	// ExtractToken 当类型为网页授权时，调用该方法提取用户Access token
+	// 返回用户Access token
+	ExtractToken(r *http.Request) (string, error)
 }

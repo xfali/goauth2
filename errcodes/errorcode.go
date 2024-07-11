@@ -35,12 +35,12 @@ var ResponseTypeNotSupport *ErrCode = NewErrCodeWithHttpStatus("1201", "response
 var AccessTokenMissing *ErrCode = NewErrCodeWithHttpStatus("2000", "Access token: Authorization missing", http.StatusUnauthorized)
 var GenerateAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2001", "generate access token error", http.StatusInternalServerError)
 var GenerateRefreshTokenError *ErrCode = NewErrCodeWithHttpStatus("2002", "generate refresh token error", http.StatusInternalServerError)
-var SaveAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2001", "save access token error", http.StatusInternalServerError)
-var SaveRefreshTokenError *ErrCode = NewErrCodeWithHttpStatus("2002", "save refresh token error", http.StatusInternalServerError)
-var AuthenticateAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2010", "authenticate access token error", http.StatusUnauthorized)
-var TokenError *ErrCode = NewErrCodeWithHttpStatus("2003", "解析Token发生错误", http.StatusUnauthorized)
+var SaveAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2011", "save access token error", http.StatusInternalServerError)
+var SaveRefreshTokenError *ErrCode = NewErrCodeWithHttpStatus("2012", "save refresh token error", http.StatusInternalServerError)
+var AuthenticateAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2021", "authenticate access token error", http.StatusUnauthorized)
+var TokenError *ErrCode = NewErrCodeWithHttpStatus("2023", "解析Token发生错误", http.StatusUnauthorized)
 var GrantTypeMissing *ErrCode = NewErrCodeWithHttpStatus("3001", "grant type missing", http.StatusBadRequest)
-var GrantTypeNotSupport *ErrCode = NewErrCodeWithHttpStatus("3001", "grant type not support", http.StatusBadRequest)
+var GrantTypeNotSupport *ErrCode = NewErrCodeWithHttpStatus("3002", "grant type not support", http.StatusBadRequest)
 
 type ErrCode struct {
 	Code       string `json:"code"`

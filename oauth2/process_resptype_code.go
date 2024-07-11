@@ -76,12 +76,24 @@ func ProcessRespTypeCode(auth *OAuth2Context, request *http.Request, response ht
 }
 
 func ProcessRespTypeWebCode(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
-	//FIXME:
-	//redirect to user and password page
+	userToken, err := auth.UserManager.ExtractToken(request)
+	if err != nil {
+		return auth.respWriter.WriteError(response, errcodes.AccessTokenMissing)
+	}
+
+	token_client_id, err := auth.DataManager.GetAccessToken(userToken)
+	if err != nil || token_client_id == "" {
+		return auth.respWriter.WriteError(response, errcodes.AuthenticateAccessTokenError)
+	}
+
 	query := request.URL.Query()
 	client_id := query.Get("client_id")
 	if client_id == "" {
 		return auth.respWriter.WriteError(response, errcodes.ClientIdMissing)
+	}
+
+	if token_client_id != client_id {
+		return auth.respWriter.WriteError(response, errcodes.ClientIdNotMatch)
 	}
 
 	//check at begin
@@ -109,7 +121,16 @@ func ProcessRespTypeWebCode(auth *OAuth2Context, request *http.Request, response
 	state := query.Get("state")
 
 	code := idUtil.RandomId(30)
-	err := auth.DataManager.SaveCode(client_id, code, scope, auth.CodeExpireTime)
+	client_secret, err := auth.ClientManager.QuerySecret(client_id)
+	if err != nil {
+		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
+	}
+	token, err := generateToken(client_id, client_secret, auth.CodeExpireTime)
+	if err != nil {
+		return auth.respWriter.WriteError(response, errcodes.SaveDataError)
+	}
+
+	err = auth.DataManager.SaveCode(code, token, auth.CodeExpireTime)
 	if err != nil {
 		return auth.respWriter.WriteError(response, errcodes.SaveDataError)
 	}

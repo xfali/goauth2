@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/dgrijalva/jwt-go v3.2.1-0.20180921172315-3af4c746e1c2+incompatible
 	github.com/emicklei/go-restful v2.9.1-0.20190303142605-0d9b078e59e9+incompatible
-	github.com/xfali/goutils v0.0.0-20190325143235-15c11c86fa21
+	github.com/xfali/goutils v0.1.5
 )
 
 require (

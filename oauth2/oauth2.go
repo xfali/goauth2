@@ -89,7 +89,6 @@ func NewWithWebCode(loginUrl, authorizeUrl string) *OAuth2Context {
 	//It is generally not recommended to use the implicit flow
 	//ret.RegisterRespProcessor(RESPONSE_TYPE_TOKEN, ProcessRespTypeToken)
 	//ret.RegisterRespWebProcessor(RESPONSE_TYPE_CODE, ProcessRespTypeWebCode)
-	ret.RegisterRespProcessor(ResponseTypeCode, ProcessRespTypeCode)
 	ret.RegisterGrantProcessor(GrantTypeCode, ProcessGrantTypeCode)
 	ret.RegisterGrantProcessor(GrantTypePassword, ProcessGrantTypePassword)
 	ret.RegisterGrantProcessor(GrantTypeClientCredentials, ProcessGrantTypeClientCredentials)

@@ -26,10 +26,10 @@ type DataManager interface {
 	Close()
 
 	//保存Code相关信息，绑定client_id以及scope，在expireIn时间之后自动失效
-	SaveCode(client_id, code, scope string, expireIn time.Duration) error
+	SaveCode(code, token string, expireIn time.Duration) error
 
 	//通过code获得client_id以及scope
-	GetCode(code string) (string, string, error)
+	GetCode(code string) (string, error)
 
 	//删除code
 	DelCode(code string) error

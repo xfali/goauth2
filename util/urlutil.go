@@ -16,23 +16,26 @@
 
 package util
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
-func AddParam(url string, param map[string]string) string {
-	if strings.LastIndex(url, "?") == -1 {
-		url += "?"
+func AddParam(u string, param map[string]string) string {
+	if strings.LastIndex(u, "?") == -1 {
+		u += "?"
 	}
 
 	size := len(param)
 	for k, v := range param {
-		url += k + "=" + v
+		u += k + "=" + url.QueryEscape(v)
 		size--
 		if size != 0 {
-			url += "&"
+			u += "&"
 		}
 	}
 
-	return url
+	return u
 }
 
 func AddFragment(url string, fragmentKey string, fragmentValue string) string {

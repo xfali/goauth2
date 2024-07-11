@@ -20,7 +20,6 @@ import (
 	"github.com/xfali/goutils/container/recycleMap"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/errcodes"
-	"strings"
 	"time"
 )
 
@@ -33,16 +32,13 @@ const (
 )
 
 type DefaultDataManager struct {
-	recycleMap *recycleMap.RecycleMap
+	recycleMap recycleMap.RecycleMap
 }
 
 func NewDefaultDataManager(PurgeInterval time.Duration) *DefaultDataManager {
 	ret := &DefaultDataManager{
-		recycleMap: recycleMap.New(),
+		recycleMap: recycleMap.New(recycleMap.OptSetPurgeInterval(PurgeInterval)),
 	}
-
-	ret.recycleMap.PurgeInterval = PurgeInterval
-	ret.recycleMap.Run()
 
 	return ret
 }
@@ -55,30 +51,30 @@ func (dm *DefaultDataManager) Close() {
 	dm.recycleMap.Close()
 }
 
-func (dm *DefaultDataManager) SaveCode(client_id, code, scope string, expireIn time.Duration) error {
-	data := client_id + ":" + scope
-	dm.recycleMap.Set(authorization_code_prefix+code, data, expireIn)
+func (dm *DefaultDataManager) SaveCode(code, token string, expireIn time.Duration) error {
+	dm.recycleMap.Set(authorization_code_prefix+code, token, expireIn)
 	return nil
 }
 
 //通过code获得client_id以及scope
-func (dm *DefaultDataManager) GetCode(code string) (string, string, error) {
+func (dm *DefaultDataManager) GetCode(code string) (string, error) {
 	data := dm.recycleMap.Get(authorization_code_prefix + code)
 	if data == nil {
-		return "", "", errcodes.CodeIsInvalid
+		return "", errcodes.CodeIsInvalid
 	} else {
-		strArr := strings.Split(data.(string), ":")
-		if len(strArr) > 1 {
-			return strArr[0], strArr[1], nil
-		} else {
-			return strArr[0], "", nil
-		}
+		return data.(string), nil
+		//strArr := strings.Split(data.(string), ":")
+		//if len(strArr) > 1 {
+		//	return strArr[0], strArr[1], nil
+		//} else {
+		//	return strArr[0], "", nil
+		//}
 	}
 }
 
 //删除code
 func (dm *DefaultDataManager) DelCode(code string) error {
-	dm.recycleMap.Del(authorization_code_prefix + code)
+	dm.recycleMap.Delete(authorization_code_prefix + code)
 	return nil
 }
 
@@ -150,12 +146,12 @@ func (dm *DefaultDataManager) RevokeToken(client_id string) {
 	//defer dm.recycleMap.Exec()
 	refresh_token := dm.recycleMap.Get(client_refresh_token_prefix + client_id)
 	if refresh_token != nil {
-		dm.recycleMap.Del(refresh_token)
-		dm.recycleMap.Del(client_refresh_token_prefix + client_id)
+		dm.recycleMap.Delete(refresh_token)
+		dm.recycleMap.Delete(client_refresh_token_prefix + client_id)
 	}
 	access_token := dm.recycleMap.Get(client_access_token_prefix + client_id)
 	if access_token != nil {
-		dm.recycleMap.Del(access_token)
-		dm.recycleMap.Del(client_access_token_prefix + client_id)
+		dm.recycleMap.Delete(access_token)
+		dm.recycleMap.Delete(client_access_token_prefix + client_id)
 	}
 }
