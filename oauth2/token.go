@@ -3,12 +3,14 @@ package oauth2
 import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/xfali/goutils/idUtil"
 	"time"
 )
 
 const (
 	TokenClaimKeyClientId = "client_id"
 	TokenClaimKeyUsername = "username"
+	TokenClaimKeyScope    = "scope"
 )
 
 func generateToken(client_id string, client_secret string, expire_time time.Duration, params ...map[string]string) (string, error) {
@@ -26,9 +28,11 @@ func generateToken(client_id string, client_secret string, expire_time time.Dura
 
 func generateTokenWithParam(client_secret string, expire_time time.Duration, param map[string]string) (string, error) {
 	now := time.Now()
+	nonce := idUtil.RandomId(6)
 	claims := jwt.MapClaims{
-		"iat": now.Unix(),
-		"exp": now.Add(expire_time).Unix(),
+		"iat":   now.Unix(),
+		"exp":   now.Add(expire_time).Unix(),
+		"nonce": nonce,
 	}
 	for k, v := range param {
 		claims[k] = v

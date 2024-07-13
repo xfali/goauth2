@@ -26,6 +26,16 @@ import (
 	"time"
 )
 
+// ProcessGrantTypeRefreshToken
+// [OAuth 2.0 Password Grant](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.3)
+/*
+	POST /token HTTP/1.1
+	Host: server.example.com
+	Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+	Content-Type: application/x-www-form-urlencoded
+
+	grant_type=refresh_token&refresh_token=tGzv3JOkF0XG5Qx2TlKWIA
+*/
 func ProcessGrantTypeRefreshToken(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
 	basic := request.Header.Get(configs.OAuth2BasicAuthorizationKey)

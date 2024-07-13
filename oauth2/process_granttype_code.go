@@ -47,6 +47,8 @@ func ProcessGrantTypeCode(auth *OAuth2Context, request *http.Request, response h
 	if err != nil {
 		return auth.respWriter.WriteError(response, errcodes.CodeIsInvalid)
 	}
+	//code只能用一次
+	defer auth.DataManager.DelCode(code)
 
 	//应用程序的客户端密钥。这确保了获取access token的请求只能从客户端发出，而不能从可能截获authorization code的攻击者发出
 	client_secret := request.FormValue("client_secret")
@@ -74,10 +76,18 @@ func ProcessGrantTypeCode(auth *OAuth2Context, request *http.Request, response h
 	} else {
 		return auth.respWriter.WriteError(response, errcodes.CodeIsInvalid)
 	}
+	var username string
+	if v, ok := claims[TokenClaimKeyUsername]; ok {
+		username = v.(string)
+	} else {
+		return auth.respWriter.WriteError(response, errcodes.CodeIsInvalid)
+	}
 
 	//与请求authorization code时使用的redirect_uri相同。某些资源（API）不需要此参数。
 	//redirect_uri, err := request.BodyParameter("redirect_uri")
-	accessToken, err := generateToken(client_id, client_secret, constants.AccessTokenExpireTime)
+	accessToken, err := generateToken(client_id, client_secret, constants.AccessTokenExpireTime, map[string]string{
+		TokenClaimKeyUsername: username,
+	})
 	if err != nil {
 		return auth.respWriter.WriteError(response, errcodes.GenerateAccessTokenError)
 	}
@@ -88,7 +98,7 @@ func ProcessGrantTypeCode(auth *OAuth2Context, request *http.Request, response h
 	}
 
 	scope := ""
-	if v, ok := claims["scope"]; ok {
+	if v, ok := claims[TokenClaimKeyScope]; ok {
 		scope = v.(string)
 	}
 	token := entities.Token{
@@ -108,8 +118,6 @@ func ProcessGrantTypeCode(auth *OAuth2Context, request *http.Request, response h
 	if err != nil {
 		return auth.respWriter.WriteError(response, errcodes.InternalError)
 	}
-	//code只能用一次
-	defer auth.DataManager.DelCode(code)
 
 	return auth.respWriter.Write(response, string(tokenByte))
 

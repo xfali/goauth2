@@ -26,6 +26,50 @@ import (
 	"time"
 )
 
+// ProcessGrantTypePassword
+// [OAuth 2.0 Password Grant](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.3)
+/*
+	+----------+
+	| Resource |
+	|  Owner   |
+	|          |
+	+----------+
+		v
+		|    Resource Owner
+		(A) Password Credentials
+		|
+		v
+	+---------+                                  +---------------+
+	|         |>--(B)---- Resource Owner ------->|               |
+	|         |         Password Credentials     | Authorization |
+	| Client  |                                  |     Server    |
+	|         |<--(C)---- Access Token ---------<|               |
+	|         |    (w/ Optional Refresh Token)   |               |
+	+---------+                                  +---------------+
+
+	Figure 5: Resource Owner Password Credentials Flow
+
+	The flow illustrated in Figure 5 includes the following steps:
+
+	(A)  The resource owner provides the client with its username and
+	password.
+
+	(B)  The client requests an access token from the authorization
+	server's token endpoint by including the credentials received
+	from the resource owner.  When making the request, the client
+	authenticates with the authorization server.
+
+	(C)  The authorization server authenticates the client and validates
+	the resource owner credentials, and if valid, issues an access
+	token.
+
+		POST /token HTTP/1.1
+		Host: server.example.com
+		Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+		Content-Type: application/x-www-form-urlencoded
+
+		grant_type=password&username=johndoe&password=A3ddj3w
+*/
 func ProcessGrantTypePassword(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
 	basic := request.Header.Get(configs.OAuth2BasicAuthorizationKey)

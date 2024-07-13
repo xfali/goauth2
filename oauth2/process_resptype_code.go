@@ -96,6 +96,23 @@ func ProcessRespTypeWebCode(auth *OAuth2Context, request *http.Request, response
 		return auth.respWriter.WriteError(response, errcodes.ClientIdNotMatch)
 	}
 
+	client_secret, err := auth.ClientManager.QuerySecret(client_id)
+	if err != nil {
+		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
+	}
+
+	claims, err := parseTokenClaims(client_secret, userToken)
+	if err != nil {
+		return auth.respWriter.WriteError(response, errcodes.AuthenticateAccessTokenError)
+	}
+
+	var username string
+	if v, ok := claims[TokenClaimKeyUsername]; ok {
+		username = v.(string)
+	} else {
+		return auth.respWriter.WriteError(response, errcodes.AuthenticateAccessTokenError)
+	}
+
 	//check at begin
 	//errCode := auth.EventListener(client_id, errcodes.AuthorizationCodeEvent)
 	//if errCode != nil {
@@ -121,11 +138,10 @@ func ProcessRespTypeWebCode(auth *OAuth2Context, request *http.Request, response
 	state := query.Get("state")
 
 	code := idUtil.RandomId(30)
-	client_secret, err := auth.ClientManager.QuerySecret(client_id)
-	if err != nil {
-		return auth.respWriter.WriteError(response, errcodes.CheckClientIdError)
-	}
-	token, err := generateToken(client_id, client_secret, auth.CodeExpireTime)
+	token, err := generateToken(client_id, client_secret, auth.CodeExpireTime, map[string]string{
+		TokenClaimKeyScope:    scope,
+		TokenClaimKeyUsername: username,
+	})
 	if err != nil {
 		return auth.respWriter.WriteError(response, errcodes.SaveDataError)
 	}

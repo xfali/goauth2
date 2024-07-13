@@ -30,6 +30,34 @@ const (
 	MaxFormSize = 1 * 1024 * 1024
 )
 
+// ProcessGrantTypeClientCredentials
+// [OAuth 2.0 Password Grant](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.3)
+/*
+	+---------+                                  +---------------+
+	|         |                                  |               |
+	|         |>--(A)- Client Authentication --->| Authorization |
+	| Client  |                                  |     Server    |
+	|         |<--(B)---- Access Token ---------<|               |
+	|         |                                  |               |
+	+---------+                                  +---------------+
+
+	Figure 6: Client Credentials Flow
+
+	The flow illustrated in Figure 6 includes the following steps:
+
+	(A)  The client authenticates with the authorization server and
+	requests an access token from the token endpoint.
+
+	(B)  The authorization server authenticates the client, and if valid,
+	issues an access token.
+
+		POST /token HTTP/1.1
+		Host: server.example.com
+		Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+		Content-Type: application/x-www-form-urlencoded
+
+		grant_type=client_credentials
+*/
 func ProcessGrantTypeClientCredentials(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
 	basic := request.Header.Get(configs.OAuth2BasicAuthorizationKey)
