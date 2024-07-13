@@ -18,6 +18,7 @@ package servers
 
 import (
 	"context"
+	"github.com/xfali/oauth2/v2/configs"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/entities"
 	"github.com/xfali/oauth2/v2/errcodes"
@@ -114,7 +115,7 @@ type defaultAuthProcessor struct {
 
 func (l *defaultAuthProcessor) OnGrantTokenSuccess(token *entities.Token, w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "Authorization",
+		Name:     configs.OAuth2TokenAuthorizationKey,
 		Value:    token.AccessToken,
 		Path:     "/",
 		HttpOnly: false,
@@ -127,7 +128,7 @@ func (l *defaultAuthProcessor) OnGrantTokenFailed(err error, w http.ResponseWrit
 }
 
 func (l *defaultAuthProcessor) ExtractToken(r *http.Request) (string, error) {
-	c, err := r.Cookie("Authorization")
+	c, err := r.Cookie(configs.OAuth2TokenAuthorizationKey)
 	if err != nil {
 		return "", errcodes.AccessTokenMissing
 	}

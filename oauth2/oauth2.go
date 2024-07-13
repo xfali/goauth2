@@ -23,6 +23,7 @@ import (
 	"github.com/xfali/oauth2/v2/datas"
 	"github.com/xfali/oauth2/v2/errcodes"
 	"github.com/xfali/oauth2/v2/events"
+	"github.com/xfali/oauth2/v2/token"
 	"github.com/xfali/oauth2/v2/users"
 	"github.com/xfali/xlog"
 	"io"
@@ -50,10 +51,12 @@ type Writer interface {
 }
 
 type OAuth2Context struct {
-	UserManager    users.UserManager
-	ClientManager  clients.ClientManager
-	DataManager    datas.DataManager
-	EventListener  events.EventListener
+	UserManager   users.UserManager
+	ClientManager clients.ClientManager
+	DataManager   datas.DataManager
+	EventListener events.EventListener
+	Extractor     token.Extractor
+
 	CodeExpireTime time.Duration
 	CallbackUrl    string
 
@@ -76,6 +79,7 @@ func NewWithWebCode(loginUrl, authorizeUrl string) *OAuth2Context {
 		UserManager:       users.NewDefaultUserManager(loginUrl, authorizeUrl),
 		ClientManager:     clients.NewDefaultClientManager(),
 		DataManager:       datas.NewDefaultDataManager(0),
+		Extractor:         token.NewExtractor(),
 		EventListener:     events.DefaultEventListener,
 		CodeExpireTime:    constants.AuthorizationCodeExpireTime,
 		respWriter:        &defaultWriter{},

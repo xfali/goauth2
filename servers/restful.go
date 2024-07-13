@@ -19,6 +19,7 @@ package servers
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/xfali/goutils/idUtil"
+	"github.com/xfali/oauth2/v2/configs"
 	"github.com/xfali/oauth2/v2/oauth2"
 	"github.com/xfali/oauth2/v2/util"
 	"github.com/xfali/xlog"
@@ -71,7 +72,7 @@ func (s *RestfulServer) Handle(c *restful.Container) {
 	ws.Route(ws.POST("/token").
 		To(s.wrapRouteFunction(s.ctx.Token)).
 		Doc("方法描述：验证").
-		Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
+		Param(ws.HeaderParameter(configs.OAuth2BasicAuthorizationKey, "头部授权信息").DataType("string")).
 		Param(ws.BodyParameter("grant_type", "获取类型").DataType("string")).
 		Param(ws.BodyParameter("code", "授权码").DataType("string")).
 		Param(ws.BodyParameter("redirect_uri", "重定向地址").DataType("string")).
@@ -83,12 +84,12 @@ func (s *RestfulServer) Handle(c *restful.Container) {
 	ws.Route(ws.GET("/authenticate").
 		To(s.wrapRouteFunction(s.ctx.Authenticate)).
 		Doc("方法描述：验证").
-		Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")))
+		Param(ws.HeaderParameter(configs.OAuth2TokenAuthorizationKey, "头部授权信息").DataType("string")))
 
 	ws.Route(ws.DELETE("/token").
 		To(s.wrapRouteFunction(s.ctx.Revoke)).
 		Doc("方法描述：验证").
-		Param(ws.HeaderParameter("Authorization", "头部授权信息").DataType("string")).
+		Param(ws.HeaderParameter(configs.OAuth2BasicAuthorizationKey, "头部授权信息").DataType("string")).
 		Param(ws.BodyParameter("client_id", "客户端ID").DataType("string")).
 		Param(ws.BodyParameter("client_secret", "客户端密码").DataType("string")))
 	/*

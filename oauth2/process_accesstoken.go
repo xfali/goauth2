@@ -23,9 +23,9 @@ import (
 )
 
 func ProcessAccessToken(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
-	authorization := request.Header.Get("Authorization")
+	authorization, err := auth.Extractor.ExtractToken(request)
 
-	if authorization == "" {
+	if err != nil || authorization == "" {
 		return auth.respWriter.WriteError(response, errcodes.AccessTokenMissing)
 	}
 

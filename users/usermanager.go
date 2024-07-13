@@ -17,11 +17,14 @@
 package users
 
 import (
+	"github.com/xfali/oauth2/v2/configs"
 	"github.com/xfali/oauth2/v2/errcodes"
+	"github.com/xfali/oauth2/v2/token"
 	"net/http"
 )
 
 type DefaultUserManager struct {
+	Extractor    token.Extractor
 	db           map[string]string
 	loginUrl     string
 	authorizeUrl string
@@ -46,7 +49,13 @@ func (um *DefaultUserManager) CreateUser(username, password string) error {
 }
 
 func (um *DefaultUserManager) UserAuthorize(r *http.Request) (string, error) {
-	_, err := r.Cookie("Authorization")
+	var err error
+	if um.Extractor != nil {
+		_, err = um.Extractor.ExtractToken(r)
+	} else {
+		_, err = r.Cookie(configs.OAuth2TokenAuthorizationKey)
+	}
+
 	if err != nil {
 		return um.loginUrl, nil
 	} else {
@@ -55,7 +64,10 @@ func (um *DefaultUserManager) UserAuthorize(r *http.Request) (string, error) {
 }
 
 func (um *DefaultUserManager) ExtractToken(r *http.Request) (string, error) {
-	c, err := r.Cookie("Authorization")
+	if um.Extractor != nil {
+		return um.Extractor.ExtractToken(r)
+	}
+	c, err := r.Cookie(configs.OAuth2TokenAuthorizationKey)
 	if err != nil {
 		return "", errcodes.AccessTokenMissing
 	} else {

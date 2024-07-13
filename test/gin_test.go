@@ -46,7 +46,7 @@ func TestGin(t *testing.T) {
 	um.CreateUser("admin", "admin")
 	srv := servers.NewGinServer(ctx)
 	r := gin.New()
-	cli := http2.NewHttpClient(nil)
+	cli := http2.NewHttpClient(nil, nil)
 	site := servers.NewSimpleSite(clientId, clientSecret, cli)
 	r.GET("/test/login", func(ctx *gin.Context) {
 		site.LoginHtml("/test/login", ctx.Writer, ctx.Request)

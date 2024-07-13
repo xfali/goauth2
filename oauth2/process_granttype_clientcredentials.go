@@ -18,6 +18,7 @@ package oauth2
 
 import (
 	"encoding/json"
+	"github.com/xfali/oauth2/v2/configs"
 	"github.com/xfali/oauth2/v2/constants"
 	"github.com/xfali/oauth2/v2/entities"
 	"github.com/xfali/oauth2/v2/errcodes"
@@ -31,7 +32,7 @@ const (
 
 func ProcessGrantTypeClientCredentials(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
-	basic := request.Header.Get("Authorization")
+	basic := request.Header.Get(configs.OAuth2BasicAuthorizationKey)
 
 	var client_id, client_secret string
 	if basic == "" {

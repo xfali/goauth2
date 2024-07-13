@@ -23,6 +23,7 @@ import (
 	"github.com/xfali/oauth2/v2/entities"
 	"github.com/xfali/oauth2/v2/errcodes"
 	"github.com/xfali/oauth2/v2/oauth2"
+	"github.com/xfali/oauth2/v2/token"
 	"github.com/xfali/xlog"
 	"io"
 	"mime/multipart"
@@ -30,11 +31,12 @@ import (
 )
 
 type HttpClient struct {
-	logger xlog.Logger
-	client *http.Client
+	logger   xlog.Logger
+	client   *http.Client
+	attacher token.Attacher
 }
 
-func NewHttpClient(client *http.Client) *HttpClient {
+func NewHttpClient(client *http.Client, attacher token.Attacher) *HttpClient {
 	if client == nil {
 		client = http.DefaultClient
 	}
@@ -44,6 +46,9 @@ func NewHttpClient(client *http.Client) *HttpClient {
 		client: client,
 	}
 
+	if attacher == nil {
+		ret.attacher = token.NewAttacher()
+	}
 	return ret
 }
 
@@ -101,7 +106,12 @@ func (c *HttpClient) GrantByPassword(ctx context.Context, endpoint string, clien
 
 func (c *HttpClient) Authorize(ctx context.Context, endpoint string, token string) error {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	req.Header.Add("Authorization", token)
+	err := c.attacher.AttachToken(req, token)
+	if err != nil {
+		c.logger.Errorln(err)
+		return err
+	}
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		c.logger.Errorln(err)
