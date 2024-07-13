@@ -13,6 +13,7 @@ import (
 
 var InternalError *ErrCode = NewErrCodeWithHttpStatus("1000", "internal error", http.StatusInternalServerError)
 var SaveDataError *ErrCode = NewErrCodeWithHttpStatus("1001", "save data error", http.StatusInternalServerError)
+var TokenTypeNotSupport *ErrCode = NewErrCodeWithHttpStatus("1011", "unsupported_token_type", http.StatusServiceUnavailable)
 var CodeIsMissing *ErrCode = NewErrCodeWithHttpStatus("1101", "code is missing", http.StatusUnauthorized)
 var CodeIsInvalid *ErrCode = NewErrCodeWithHttpStatus("1102", "check code error", http.StatusUnauthorized)
 var ClientIdMissing *ErrCode = NewErrCodeWithHttpStatus("1103", "client_id is missing", http.StatusUnauthorized)
@@ -39,6 +40,7 @@ var SaveAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2011", "save acces
 var SaveRefreshTokenError *ErrCode = NewErrCodeWithHttpStatus("2012", "save refresh token error", http.StatusInternalServerError)
 var AuthenticateAccessTokenError *ErrCode = NewErrCodeWithHttpStatus("2021", "authenticate access token error", http.StatusUnauthorized)
 var TokenError *ErrCode = NewErrCodeWithHttpStatus("2023", "解析Token发生错误", http.StatusUnauthorized)
+var RevokeTokenError *ErrCode = NewErrCodeWithHttpStatus("2031", "revoke_token_failed", http.StatusInternalServerError)
 var GrantTypeMissing *ErrCode = NewErrCodeWithHttpStatus("3001", "grant type missing", http.StatusBadRequest)
 var GrantTypeNotSupport *ErrCode = NewErrCodeWithHttpStatus("3002", "grant type not support", http.StatusBadRequest)
 

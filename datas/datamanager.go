@@ -141,17 +141,33 @@ func (dm *DefaultDataManager) GetAccessToken(access_token string) (string, error
 }
 
 //废弃client_id绑定的token，包括refresh token及access token
-func (dm *DefaultDataManager) RevokeToken(client_id string) {
+func (dm *DefaultDataManager) RevokeToken(client_id string, token string, tokenType string) error {
 	//_ = dm.recycleMap.Multi()
 	//defer dm.recycleMap.Exec()
-	refresh_token := dm.recycleMap.Get(client_refresh_token_prefix + client_id)
-	if refresh_token != nil {
-		dm.recycleMap.Delete(refresh_token)
-		dm.recycleMap.Delete(client_refresh_token_prefix + client_id)
+	if tokenType == constants.TokenTypeRefresh || tokenType == "" {
+		refresh_token := dm.recycleMap.Get(client_refresh_token_prefix + client_id)
+		if refresh_token != nil {
+			dm.recycleMap.Delete(refresh_token)
+			dm.recycleMap.Delete(client_refresh_token_prefix + client_id)
+		}
+		if tokenType == constants.TokenTypeRefresh {
+			return nil
+		}
 	}
-	access_token := dm.recycleMap.Get(client_access_token_prefix + client_id)
-	if access_token != nil {
-		dm.recycleMap.Delete(access_token)
-		dm.recycleMap.Delete(client_access_token_prefix + client_id)
+	if tokenType == constants.TokenTypeAccess || tokenType == "" {
+		access_token := dm.recycleMap.Get(client_access_token_prefix + client_id)
+		if access_token != nil {
+			dm.recycleMap.Delete(access_token)
+			dm.recycleMap.Delete(client_access_token_prefix + client_id)
+		}
+		if tokenType == constants.TokenTypeAccess {
+			return nil
+		}
+	}
+
+	if tokenType != "" {
+		return errcodes.TokenTypeNotSupport
+	} else {
+		return nil
 	}
 }

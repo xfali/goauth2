@@ -215,6 +215,9 @@ type defaultWriter struct {
 }
 
 func (dw *defaultWriter) Write(w http.ResponseWriter, o interface{}) error {
+	if o == nil {
+		return nil
+	}
 	if s, ok := o.(string); ok {
 		_, err := io.WriteString(w, s)
 		return err

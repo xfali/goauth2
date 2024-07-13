@@ -47,5 +47,5 @@ type DataManager interface {
 	GetAccessToken(access_token string) (string, error)
 
 	//废弃client_id绑定的token，包括refresh token及access token
-	RevokeToken(client_id string)
+	RevokeToken(client_id string, token string, tokenType string) error
 }

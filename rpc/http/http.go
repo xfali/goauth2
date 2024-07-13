@@ -20,14 +20,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/xfali/oauth2/v2/entities"
 	"github.com/xfali/oauth2/v2/errcodes"
 	"github.com/xfali/oauth2/v2/oauth2"
 	"github.com/xfali/oauth2/v2/token"
 	"github.com/xfali/xlog"
 	"io"
-	"mime/multipart"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 type HttpClient struct {
@@ -53,39 +55,18 @@ func NewHttpClient(client *http.Client, attacher token.Attacher) *HttpClient {
 }
 
 func (c *HttpClient) GrantByPassword(ctx context.Context, endpoint string, clientId, clientSecret, username, password string) (*entities.Token, error) {
-	body := bytes.NewBuffer(nil)
-	w := multipart.NewWriter(body)
-	err := w.WriteField("grant_type", oauth2.GrantTypePassword)
-	if err != nil {
-		return nil, err
-	}
-	err = w.WriteField("client_id", clientId)
-	if err != nil {
-		return nil, err
-	}
-	err = w.WriteField("client_secret", clientSecret)
-	if err != nil {
-		return nil, err
-	}
-	err = w.WriteField("username", username)
-	if err != nil {
-		return nil, err
-	}
-	err = w.WriteField("password", password)
-	if err != nil {
-		return nil, err
-	}
+	formData := url.Values{}
+	formData.Set("grant_type", oauth2.GrantTypePassword)
+	formData.Set("client_id", clientId)
+	formData.Set("client_secret", clientSecret)
+	formData.Set("username", username)
+	formData.Set("password", password)
 
-	err = w.Close()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, err
 	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := c.client.Do(req)
 	if err != nil {
 		c.logger.Errorln(err)
@@ -93,7 +74,7 @@ func (c *HttpClient) GrantByPassword(ctx context.Context, endpoint string, clien
 	}
 	defer resp.Body.Close()
 
-	body.Reset()
+	body := bytes.NewBuffer(nil)
 	_, err = io.Copy(body, resp.Body)
 	if err != nil {
 		return nil, err
@@ -124,4 +105,35 @@ func (c *HttpClient) Authorize(ctx context.Context, endpoint string, token strin
 		return errcodes.AuthenticateAccessTokenError
 	}
 	return nil
+}
+
+func (c *HttpClient) RevokeToken(ctx context.Context, endpoint string, clientId, clientSecret, token string, tokenType string) error {
+	formData := url.Values{}
+	formData.Set("client_id", clientId)
+	formData.Set("client_secret", clientSecret)
+	formData.Set("token", token)
+	formData.Set("token_type_hint", tokenType)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(formData.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := c.client.Do(req)
+	if err != nil {
+		c.logger.Errorln(err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	body := bytes.NewBuffer(nil)
+	_, err = io.Copy(body, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode < 300 {
+		return nil
+	}
+	return fmt.Errorf("%s", body.String())
 }

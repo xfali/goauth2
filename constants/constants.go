@@ -44,3 +44,8 @@ const (
 	RefreshTokenExpireTime      = 30 * 24 * time.Hour
 	TokenKeepExpireTime         = 5 * time.Minute
 )
+
+const (
+	TokenTypeRefresh = "refresh_token"
+	TokenTypeAccess  = "access_token"
+)

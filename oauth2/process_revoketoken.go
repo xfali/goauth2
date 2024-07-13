@@ -23,6 +23,8 @@ import (
 	"net/http"
 )
 
+// ProcessRevokeToken
+// [RFC 7009: Token Revocation](tools.ietf.org/html/rfc7009)
 func ProcessRevokeToken(auth *OAuth2Context, request *http.Request, response http.ResponseWriter) error {
 	//应用程序包含它在重定向中给出的授权码
 	basic := request.Header.Get(configs.OAuth2BasicAuthorizationKey)
@@ -56,13 +58,25 @@ func ProcessRevokeToken(auth *OAuth2Context, request *http.Request, response htt
 		return auth.respWriter.WriteError(response, errcodes.ClientSecretNotMatch)
 	}
 
+	token := request.FormValue("token")
+	tokenType := request.FormValue("token_type_hint")
+
 	errCode := auth.EventListener(client_id, constants.RevokeToken)
 	if errCode != nil {
 		return auth.respWriter.WriteError(response, errCode)
 	}
 
-	auth.DataManager.RevokeToken(client_id)
+	err = auth.DataManager.RevokeToken(client_id, token, tokenType)
+	if err != nil {
+		if errC, ok := err.(*errcodes.ErrCode); ok {
+			return auth.respWriter.WriteError(response, errC)
+		} else {
+			auth.logger.Errorln(err)
+			return auth.respWriter.WriteError(response, errcodes.RevokeTokenError)
+		}
+	} else {
+		_ = auth.respWriter.Write(response, nil)
+	}
 
-	response.WriteHeader(http.StatusOK)
 	return nil
 }
